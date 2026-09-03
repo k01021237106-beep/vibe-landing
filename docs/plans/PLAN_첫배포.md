@@ -1,6 +1,6 @@
 # 실행 계획: 첫배포 — 바이브코딩 강의 판매 사이트
 
-**Status**: 🔄 진행 중 — Phase 1 완료
+**Status**: 🔄 진행 중 — Phase 2 완료 (카카오 대시보드 설정 대기)
 **Started**: 2026-09-03
 **Last Updated**: 2026-09-03
 
@@ -118,21 +118,28 @@
 ### Phase 2. DB + 인증
 **목표**: 카카오로 로그인하면 `profiles`에 행이 생기고, 비인가 접근은 DB가 막는다.
 
-- [ ] Supabase 신규 프로젝트 생성
-- [ ] `.env.local`에 URL·anon key 저장 (**커밋 금지**)
-- [ ] `lib/supabase/client.ts`, `lib/supabase/server.ts`
-- [ ] 마이그레이션 작성: `profiles` `courses` `lessons` `orders` `enrollments` `leads` `reviews` `faqs`
-- [ ] **RED**: anon 키로 `lessons` 조회가 차단되는지 검증하는 테스트 먼저 작성
-- [ ] 전 테이블 RLS 활성화 + 기본 차단 후 필요한 정책만 추가
-- [ ] 카카오 로그인 Provider 설정 (+ 이메일 로그인 폴백)
-- [ ] `middleware.ts` 세션 갱신
-- [ ] 시드 데이터: 강의 1개 + 차시 + FAQ + 샘플 후기
+- [x] Supabase 신규 프로젝트 생성 (사용자) — `첫배포`, ap-southeast-2
+- [x] `.env.local`에 URL·공개키 저장 — `.gitignore` 확인, `.env.example`만 커밋
+- [x] `lib/supabase/client.ts`, `lib/supabase/server.ts` (+ `middleware.ts`, `database.types.ts`)
+- [x] 마이그레이션 작성: 8개 테이블 전부
+- [x] **RED**: anon이 `vimeo_id`를 읽는 것을 실제로 재현함 (아래 Notes)
+- [x] 전 테이블 RLS 활성화 + 기본 차단 후 필요한 정책만 추가
+- [~] 카카오 로그인 — **코드 완료, 대시보드 설정은 사용자 몫** (`docs/SUPABASE.md`)
+- [x] 이메일 로그인 폴백 (비밀번호 없이 링크 발송)
+- [x] `middleware.ts` 세션 갱신
+- [x] 시드 데이터: 강의 1개 + 차시 8개 + FAQ 6개 + 샘플 후기 4개
 
 **Quality Gate**
-- [ ] **anon 키로 `lessons.vimeo_id` 조회 시 차단됨을 테스트가 증명**
-- [ ] 로그인 → 세션 유지 → 로그아웃 왕복 성공
-- [ ] 로그인 시 `profiles` 행 자동 생성
-- [ ] 마이그레이션에 역방향 SQL 포함
+- [x] **anon이 `lessons.vimeo_id`를 읽지 못함을 테스트가 증명** — `supabase/tests/rls.sql` 13/13
+- [~] 로그인 → 세션 유지 → 로그아웃 왕복 — **이 환경에서 실행 불가** (아래 Notes 6번)
+- [x] 로그인 시 `profiles` 행 자동 생성 — `supabase/tests/auth_trigger.sql` 6/6
+- [x] 마이그레이션에 역방향 SQL 포함 — `supabase/migrations/down/`
+
+추가로 확보한 것:
+- [x] Supabase 보안 어드바이저 지적 사항 해소 (함수 `search_path`, 트리거 함수 REST 노출)
+- [x] 비로그인 `/my` 접근 시 `/login?next=/my`로 차단 (307)
+- [x] 사용자가 자기 `role`을 관리자로 못 바꿈 (컬럼 권한 회수)
+- [x] 신청자 명단(`leads`)을 아무도 조회할 수 없음 — 관리자만
 
 **롤백**: 역방향 마이그레이션 실행. 실사용자 데이터 없을 때만 안전.
 
@@ -260,7 +267,7 @@
 | 단계 | 상태 | 완료일 |
 |---|---|---|
 | 1. 기반 구축 | ✅ 완료 | 2026-09-03 |
-| 2. DB + 인증 | ⬜ 대기 | |
+| 2. DB + 인증 | ✅ 완료 | 2026-09-03 |
 | 3. 공개 페이지 | ⬜ 대기 | |
 | 4. 무료 1강 퍼널 | ⬜ 대기 | |
 | 5. 결제 | ⬜ 대기 | |
@@ -316,3 +323,69 @@ npm에도, 구글 폰트에도 없다. 배포 CDN(jsDelivr)은 이 환경에서 
 - Playwright 1.62가 기대하는 Chromium 리비전과 이 환경에 설치된 리비전이 다르다.
   `CHROMIUM_PATH` 환경변수로 우회했다. Phase 3에서 E2E를 붙일 때 `playwright.config.ts`에 정리한다.
 - 기존 정적 페이지(`김경옥의 AI 콘텐츠 실험실`)는 브랜드·미학이 모두 달라 `docs/legacy-index.html`로 보존만 했다.
+
+---
+
+## Phase 2 배운 점 (2026-09-03)
+
+### 1. RLS만으로는 vimeo_id를 못 막는다 — 직접 확인했다
+계획은 "RLS를 켜면 anon이 `lessons`를 못 읽는다"를 전제했다. 실제로 해 보니 틀렸다.
+
+```
+RLS 켬 + `for select using (true)` 정책  →  anon이 vimeo_id 8건 전부 읽음
+```
+
+**RLS는 '행'을 거르지 '컬럼'을 가리지 못한다.** 그런데 커리큘럼(제목·길이)은 공개해야 하니
+행 자체는 열어 줘야 하고, 그러면 같은 행의 `vimeo_id`가 따라 나온다.
+행을 막으면 커리큘럼이 안 보이고, 열면 영상 ID가 샌다 — 정책으로는 풀 수 없는 문제였다.
+
+→ **컬럼 단위 `grant`** 로 해결했다. `vimeo_id`만 빼고 권한을 준다.
+정책을 잘못 써도 권한이 없으면 못 읽는다. 정책보다 아래에 있는 방어선이다.
+
+이게 이번 단계에서 가장 중요한 발견이다. TDD 순서(테스트 먼저)가 아니었으면
+"RLS 켰으니 됐다"로 넘어가서 유료 영상이 통째로 샜을 것이다.
+
+### 2. 이 프로젝트의 anon에는 기본 권한이 없었다
+예전 Supabase는 `public` 스키마의 새 테이블에 `anon`·`authenticated` SELECT를 기본으로 줬다.
+이 프로젝트는 아니다 (`REFERENCES`·`TRIGGER`·`TRUNCATE`만 있었다).
+`service_role`조차 DML 권한이 없어 명시적으로 부여해야 했다.
+→ 권한을 추측하지 말고 `information_schema.role_table_grants`로 확인하고 시작한다.
+
+또 `rls_auto_enable()`이라는 이벤트 트리거가 걸려 있어 새 테이블에 RLS가 자동으로 켜진다.
+Supabase가 관리하는 안전장치다.
+
+### 3. 테스트 단언은 좁게 써야 한다
+`vimeo_id` 컬럼 권한이 0건인지 보는 검사가 처음에 FAIL이 났다.
+실제로 남아 있던 건 `REFERENCES`(외래키를 걸 수 있을 뿐 값은 못 읽는다)였고
+보안에는 문제가 없었다. 단언이 넓어서 난 거짓 실패다.
+→ `privilege_type in ('SELECT','INSERT','UPDATE')`로 좁혔다.
+넓은 단언은 진짜 문제를 가리는 소음이 된다.
+
+### 4. 권한을 좁히면 쿼리 작성법이 달라진다
+- `lessons`를 `select *`로 조회하면 권한 오류다. 컬럼을 명시해야 한다.
+- `leads`는 `anon`에게 `insert`만 줬으므로 넣은 뒤 결과를 돌려받을 수 없다.
+  `.insert(row).select()`를 붙이면 `permission denied`가 난다.
+  → Phase 4에서 신청 폼을 만들 때 바로 걸릴 지점이라 테스트로 고정해 뒀다.
+
+### 5. 헤더에 로그인 상태를 넣으면 전 페이지가 동적이 된다
+레이아웃에서 `getUser()`를 부르면 쿠키를 읽게 되어 랜딩까지 동적 렌더링이 된다.
+클라이언트에서 확인하면 정적으로 둘 수 있지만, 헤더가 잠깐 틀린 상태로 보였다가 바뀐다.
+시니어 사용자에게 깜빡임은 혼란이므로 동적 렌더링을 택했다.
+Phase 7에서 Lighthouse 성능이 문제되면 다시 본다.
+
+### 6. 이 환경에서 확인하지 못한 것
+개발 환경의 네트워크 정책이 `*.supabase.co`(REST·Auth)를 막는다. MCP 채널만 열려 있다.
+- **가능했던 것**: 마이그레이션 적용, 역할 전환(`set role anon`) 기반 RLS 검증,
+  `auth.users`에 직접 넣어 트리거 검증 — 전부 실제 데이터베이스에서 실행했다.
+- **불가능했던 것**: 브라우저로 실제 로그인 → 세션 유지 → 로그아웃 왕복.
+  카카오 대시보드 설정도 아직이라 어차피 지금은 돌지 않는다.
+  → 대시보드 설정 후 로컬에서 확인해야 하는 **유일한 미검증 항목**이다.
+
+비로그인 상태로 `/my`에 가면 `/login?next=/my`로 307 리다이렉트되는 것은 확인했다.
+Supabase에 닿지 못하면 `getUser()`가 null을 주므로 **막히는 쪽으로 실패한다** — 안전한 방향이다.
+
+### 7. 리전이 시드니다
+`ap-southeast-2`로 만들어졌다. 이용자가 국내이므로 서울(`ap-northeast-2`)보다 왕복이 100ms쯤 길다.
+리전은 나중에 바꿀 수 없고 새 프로젝트로 옮겨야 한다.
+지금은 실사용자·결제 데이터가 없어 옮기는 비용이 가장 싸다 —
+마이그레이션을 순서대로 다시 적용하면 끝난다. 오픈 후에는 훨씬 비싸진다.

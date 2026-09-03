@@ -14,7 +14,8 @@
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
+cp .env.example .env.local   # 값을 채운다 (docs/SUPABASE.md 참고)
+npm run dev                  # http://localhost:3000
 ```
 
 `npm install` 뒤 처음 `dev`나 `build`를 돌리면 `scripts/setup-fonts.mjs`가
@@ -30,6 +31,7 @@ Pretendard 웹폰트를 `public/fonts/`에 자동으로 만든다. 이 산출물
 | `npm run lint` | ESLint |
 | `npm run typecheck` | 타입 검사 |
 | `npm run check:layout` | 375/768/1440px 스크린샷 + 레이아웃 검사 |
+| `npm run test:db` | RLS·가입 트리거 검증 (`SUPABASE_DB_URL` 필요) |
 
 `check:layout`은 `npm start`로 서버가 떠 있어야 한다.
 Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라우저가 다르면
@@ -41,10 +43,25 @@ Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라
 |---|---|
 | 프레임워크 | Next.js 15 App Router + TypeScript |
 | 스타일 | Tailwind CSS 4 + shadcn/ui 규약 |
-| DB·인증 | Supabase (Postgres + RLS) — *Phase 2* |
+| DB·인증 | Supabase (Postgres + RLS), 카카오 로그인 + 이메일 폴백 |
 | 결제 | 토스페이먼츠 단건결제 — *Phase 5* |
 | 영상 | Vimeo (비공개 + 도메인 제한) — *Phase 6* |
 | 배포 | Vercel |
+
+## 환경변수
+
+`.env.example`을 `.env.local`로 복사해 채운다. `.env.local`은 커밋되지 않는다.
+
+| 이름 | 용도 |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 주소 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개용 키 — 할 수 있는 일은 RLS가 정한다 |
+
+값이 없으면 시작 시점에 한국어 메시지와 함께 바로 멈춘다(`lib/env.ts`).
+배포한 뒤 "로그인이 왜 안 되지"를 헤매는 것보다 낫다.
+
+자세한 데이터베이스 설정과 **카카오 로그인 대시보드 설정**은
+[`docs/SUPABASE.md`](docs/SUPABASE.md)를 본다.
 
 ## 디자인 시스템
 
@@ -106,11 +123,21 @@ components/
   ui/                 shadcn/ui 규약 컴포넌트
 lib/
   config.ts           가격·브랜드·연락처·사업자정보 단일 정의
+  env.ts              환경변수 접근 지점 (없으면 즉시 중단)
   utils.ts            cn() 헬퍼
+  supabase/
+    client.ts         브라우저용
+    server.ts         서버 컴포넌트·라우트 핸들러용
+    middleware.ts     세션 갱신
+    database.types.ts 스키마에서 생성 (직접 고치지 않는다)
+supabase/
+  migrations/         정방향 SQL (+ down/ 역방향)
+  tests/              RLS·가입 트리거 검증
 scripts/
   setup-fonts.mjs     Pretendard 준비 (prebuild)
   check-layout.mjs    레이아웃 Quality Gate
-docs/                 브리프·계획·스크린샷
+  test-db.sh          데이터베이스 검증 실행
+docs/                 브리프·계획·Supabase 설정·스크린샷
 ```
 
 ### 값을 바꿀 때
@@ -133,3 +160,5 @@ docs/                 브리프·계획·스크린샷
       샘플을 실제처럼 두고 오픈하면 표시광고법 위반이다.
 - [ ] `lib/config.ts`의 `추후 입력` 값 전부 채우기
 - [ ] 최종 가격 확정
+- [ ] 카카오 로그인 대시보드 설정 ([`docs/SUPABASE.md`](docs/SUPABASE.md))
+- [ ] `lessons.vimeo_id`를 실제 Vimeo ID로 교체 (비공개 + 도메인 제한 후)

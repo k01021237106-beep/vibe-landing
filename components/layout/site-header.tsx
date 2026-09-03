@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { mainNav, primaryCta } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
-export function SiteHeader() {
+/** 로그인 여부에 따라 헤더 오른쪽이 달라진다. 서버 레이아웃에서 내려 준다. */
+export function SiteHeader({ isSignedIn = false }: { isSignedIn?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -41,6 +42,21 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {isSignedIn ? (
+            <Link
+              href="/my"
+              className="hidden h-12 items-center rounded px-4 text-base text-muted transition-colors hover:text-fg sm:inline-flex"
+            >
+              내 강의실
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden h-12 items-center rounded px-4 text-base text-muted transition-colors hover:text-fg sm:inline-flex"
+            >
+              로그인
+            </Link>
+          )}
           <Button asChild size="sm" className="hidden sm:inline-flex">
             <Link href={primaryCta.href}>{primaryCta.label}</Link>
           </Button>
@@ -78,6 +94,15 @@ export function SiteHeader() {
               </Link>
             </li>
           ))}
+          <li>
+            <Link
+              href={isSignedIn ? "/my" : "/login"}
+              onClick={() => setOpen(false)}
+              className="flex min-h-14 items-center border-b border-line text-lg text-fg"
+            >
+              {isSignedIn ? "내 강의실" : "로그인"}
+            </Link>
+          </li>
           <li className="py-4 sm:hidden">
             <Button asChild size="lg" className="w-full">
               <Link href={primaryCta.href} onClick={() => setOpen(false)}>

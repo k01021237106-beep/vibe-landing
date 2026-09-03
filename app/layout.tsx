@@ -4,6 +4,7 @@ import { JetBrains_Mono } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { site } from "@/lib/config";
+import { getCurrentUser } from "@/lib/supabase/server";
 import "./globals.css";
 
 /** 코드 표기용. 본문(Pretendard)·헤드라인(Paperlogy)은 globals.css에서 다룬다. */
@@ -21,9 +22,15 @@ export const metadata: Metadata = {
   description: site.description,
 };
 
-export default function RootLayout({
+/*
+ * 로그인 여부를 서버에서 읽어 헤더에 내려 준다.
+ * 이 때문에 모든 페이지가 동적 렌더링이 된다 — 헤더가 잠깐 틀린 상태로 보였다가
+ * 바뀌는 것보다 낫다고 판단했다. 시니어 사용자에게 깜빡임은 혼란이다.
+ */
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const user = await getCurrentUser();
   return (
     <html lang="ko" className={jetbrainsMono.variable}>
       <head>
@@ -42,11 +49,11 @@ export default function RootLayout({
         >
           본문으로 건너뛰기
         </a>
-        <SiteHeader />
+        <SiteHeader isSignedIn={Boolean(user)} />
         <main id="main" className="flex-1">
           {children}
         </main>
-        <SiteFooter />
+        <SiteFooter isSignedIn={Boolean(user)} />
       </body>
     </html>
   );

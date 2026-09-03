@@ -14,7 +14,7 @@ function BusinessField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({ isSignedIn = false }: { isSignedIn?: boolean }) {
   return (
     <footer className="bg-ink text-ink-fg">
       <div className="mx-auto max-w-6xl px-5 py-14 lg:px-8 lg:py-20">
@@ -68,6 +68,22 @@ export function SiteFooter() {
                     카카오톡으로 문의하기
                   </a>
                 </li>
+                {isSignedIn ? (
+                  <li>
+                    {/*
+                      로그아웃은 POST로만 받는다. 링크 클릭이나 이미지 로딩만으로
+                      로그아웃되면 안 되기 때문이다.
+                    */}
+                    <form action="/auth/signout" method="post">
+                      <button
+                        type="submit"
+                        className="flex min-h-12 items-center text-base text-ink-muted transition-colors hover:text-ink-fg"
+                      >
+                        로그아웃
+                      </button>
+                    </form>
+                  </li>
+                ) : null}
               </ul>
             </nav>
           </div>
