@@ -1,0 +1,175 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ==========================================================================
+   폰트
+   - 본문 Pretendard: /public/fonts/pretendard.css (prebuild 스크립트가 생성)
+   - 코드 JetBrains Mono: next/font/google → --font-jetbrains-mono
+   - 헤드라인 Paperlogy: 아래 @font-face. 파일이 없으면 Pretendard 900으로 자연 대체된다.
+   ========================================================================== */
+
+/*
+ * TODO: Paperlogy Black(9Black) woff2 파일을
+ *       public/fonts/paperlogy/Paperlogy-9Black.woff2 에 넣으면 자동 적용된다.
+ *       (npm·구글폰트에 없는 서체라 저장소에 직접 넣어야 한다. 자세한 안내는 README 참고)
+ *       파일이 없는 동안에는 아래 font-family 폴백에 따라 Pretendard 900이 쓰인다.
+ */
+@font-face {
+  font-family: "Paperlogy";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src:
+    local("Paperlogy 9 Black"),
+    local("Paperlogy-9Black"),
+    url("/fonts/paperlogy/Paperlogy-9Black.woff2") format("woff2");
+}
+
+/* ==========================================================================
+   컬러 토큰 — 화면에서 색을 하드코딩하지 않는다. 반드시 이 변수만 참조한다.
+   대비는 전부 WCAG AA(4.5:1) 이상으로 검증된 조합이다.
+   ========================================================================== */
+:root {
+  /* 라이트 모드 전용. 시니어 가독성을 위해 팔레트 1벌만 검증한다. */
+  color-scheme: light;
+
+  --bg: #fbf7f0; /* 따뜻한 크림 — 기본 배경 */
+  --fg: #14110f; /* 잉크 블랙 — 기본 글자 */
+  --muted: #5a524b; /* 보조 글자 (크림 위 7.17:1 AAA) */
+  --line: #e7dfd3; /* 구분선 */
+  --surface: #f4ede1; /* 크림 위에 얹는 옅은 면 */
+
+  --accent: #ff5a1f; /* 코랄 오렌지 — CTA 전용 */
+  --accent-hover: #e8480f;
+  /* 흰 글자를 코랄 위에 올리면 3.12:1로 AA 미달이다. 잉크 글자는 6.03:1로 통과한다. */
+  --accent-fg: #14110f;
+
+  /* 잉크 배경으로 반전되는 구역(히어로·결제)용 */
+  --ink: #14110f;
+  --ink-fg: #fbf7f0;
+  --ink-fg-hover: #ffffff;
+  --ink-muted: #b8afa4; /* 잉크 위 8.69:1 AAA */
+  --ink-line: #322c27;
+  --ink-accent: #ff7a45; /* 잉크 위 액센트 글자 7.27:1 AAA */
+
+  --focus: #ff5a1f;
+  --radius: 0.5rem;
+
+  --font-sans-stack:
+    "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto,
+    "Helvetica Neue", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* Paperlogy가 없으면 Pretendard로 자연 대체된다 */
+  --font-display-stack: "Paperlogy", var(--font-sans-stack);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-ink: var(--ink);
+  --color-ink-fg: var(--ink-fg);
+  --color-ink-fg-hover: var(--ink-fg-hover);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-line: var(--ink-line);
+  --color-ink-accent: var(--ink-accent);
+
+  --font-sans: var(--font-sans-stack);
+  --font-display: var(--font-display-stack);
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-DEFAULT: var(--radius);
+}
+
+/* ==========================================================================
+   기본 스타일
+   ========================================================================== */
+@layer base {
+  * {
+    /*
+     * 한글은 어절 중간에서 잘리면 읽는 속도가 크게 떨어진다.
+     * 전역으로 어절 단위 줄바꿈을 강제한다. (성공 기준: 375px에서 잘림 0건)
+     */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  html {
+    /* 시니어 포함 타겟 — 본문 기준값을 18px로 올린다 */
+    font-size: 18px;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans-stack);
+    font-weight: 400;
+    line-height: 1.7;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display-stack);
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: -0.03em;
+  }
+
+  /* 키보드 사용자에게만 보이는 또렷한 초점 표시 */
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-fg);
+  }
+}
+
+/* 움직임을 줄이고 싶다고 설정한 사용자는 애니메이션을 보지 않는다 */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@utility live-dot {
+  /* 로고의 '배포 성공 표시등' — 당신의 서비스가 지금 살아 있다 */
+  animation: live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
