@@ -38,14 +38,34 @@ Vercel → 프로젝트 → **Settings → Environment Variables**
 
 키 값은 대시보드 입력창에 직접 붙여넣는다. 이름은 아래 표에서 복사한다.
 
+> ⚠️ **화면에서 환경은 한 번에 하나만 선택된다** (2026-09-04 실제 확인).
+> Production을 체크한 뒤 Preview를 체크하면 Production 체크가 풀린다.
+>
+> 따라서 **한 변수를 두 환경에 넣으려면 같은 Key/Value를 두 번 저장한다.**
+> Preview로 한 번, Production으로 한 번. 목록에 같은 이름이 2줄 생기는 것이 정상이다.
+>
+> 창 아래의 **"Add new variable"은 누르지 않는다** — 그건 *다른* 변수를
+> 여러 개 한꺼번에 추가하는 버튼이지, 같은 변수를 환경별로 나누는 버튼이 아니다.
+>
+> 값을 나중에 바꿀 때는 **두 줄 다** 고쳐야 한다. 한쪽만 고치면
+> 미리보기와 운영이 서로 다른 값으로 돌아간다.
+>
+> 터미널을 쓰면 한 번에 두 환경을 고를 수 있다 (스페이스바로 복수 선택):
+> ```bash
+> npx vercel login && npx vercel link
+> npx vercel env add NEXT_PUBLIC_SUPABASE_URL
+> ```
+
 | 이름 | 어디서 얻나 | 공개 여부 | 적용 환경 |
 |---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | 이미 알고 있음 (아래 참고) | 브라우저로 나감 | Production, Preview, Development |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 이미 알고 있음 (아래 참고) | 브라우저로 나감 | Production, Preview, Development |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` | **서버 전용** | Production, Preview |
-| `LEAD_ACCESS_SECRET` | 직접 생성 (아래 명령) | **서버 전용** | Production, Preview |
-| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 토스 개발자센터 → API 키 → Client Key | 브라우저로 나감 | Production, Preview, Development |
-| `TOSS_SECRET_KEY` | 토스 개발자센터 → API 키 → Secret Key | **서버 전용** | Production, Preview |
+| `NEXT_PUBLIC_SUPABASE_URL` | 이미 알고 있음 (아래 참고) | 브라우저로 나감 | Production + Preview |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 이미 알고 있음 (아래 참고) | 브라우저로 나감 | Production + Preview |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` | **서버 전용** | Production + Preview |
+| `LEAD_ACCESS_SECRET` | 직접 생성 (아래 명령) | **서버 전용** | Production + Preview |
+| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 토스 개발자센터 → API 키 → Client Key | 브라우저로 나감 | Production + Preview |
+| `TOSS_SECRET_KEY` | 토스 개발자센터 → API 키 → Secret Key | **서버 전용** | Production + Preview |
+
+변수 6개 × 환경 2개 = **저장 12번**. 다 넣으면 `vercel env ls`에 12줄이 보인다.
 
 `NEXT_PUBLIC_SITE_URL`은 넣지 않아도 된다. Vercel이 `VERCEL_PROJECT_PRODUCTION_URL`을
 자동으로 넣어 주고 코드가 그것을 받는다. 나중에 직접 산 도메인을 쓰게 되면 그때 넣는다.
