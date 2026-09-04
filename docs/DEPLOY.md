@@ -26,7 +26,7 @@ Error: 환경변수 NEXT_PUBLIC_SUPABASE_URL이(가) 없습니다.
 우리가 의도한 것이었다 — 값이 없으면 화면이 이상하게 동작하는 대신
 빌드 단계에서 바로 멈춘다 (`lib/env.ts`). 값을 넣자 이 지점은 통과했다.
 
-**2) 미들웨어를 Vercel이 못 싣는다 (해결됨 — 빌드 도구 교체)**
+**2) 미들웨어를 Vercel이 못 싣는다**
 
 ```
 Build Completed in /vercel/output [58s]
@@ -37,18 +37,30 @@ The Edge Function "middleware" is referencing unsupported modules:
 
 빌드는 전부 성공한 뒤(22개 페이지 생성까지 끝났다) **출력물을 올리는 단계**에서 멈췄다.
 Vercel 쪽 오류 코드는 `NOW_SANDBOX_WORKER_EDGE_FUNCTION_UNSUPPORTED_MODULES`다.
+빌드 로그의 마지막 줄만 보면 "빌드 완료"라서 성공한 줄 알기 쉽다 —
+**배포 상태(state)를 따로 봐야 한다.**
 
-원인은 코드가 아니라 빌드 도구였다. `next build --turbopack`이 만드는 미들웨어 산출물은
-`[root-of-the-server]__….js` 같은 조각 여러 개인데, Vercel이 이것을 하나의
-Edge Function으로 합치는 과정에서 `@/lib/supabase/middleware` 경로가 풀리지 않은 채 남는다.
-같은 코드를 기본 빌드(`next build`)로 만들면 `server/middleware.js` 하나로 나오고
-바깥을 참조하는 모듈은 `node:async_hooks`·`node:buffer`뿐이다 — 둘 다 지원되는 모듈이다.
+문제가 되는 이름 `@/lib/supabase/middleware`는 저장소 뿌리 `middleware.ts`의
+**유일한 `@/` 별칭 import**다. `@/`는 `tsconfig.json`의 `paths`가 정하는 우리 규약이고,
+Next는 이것을 풀지만 Vercel이 뿌리의 `middleware.ts`를 자기 방식으로 번들할 때는 풀지 못한다.
+(`__vc__ns__`는 Next의 산출물 이름이 아니다.)
 
-그래서 `package.json`의 `build`에서 `--turbopack`을 뺐다.
-개발 서버(`npm run dev`)는 그대로 Turbopack을 쓴다. 빠르고, 배포 산출물과 무관하다.
+Next가 만든 산출물 자체에는 문제가 없다는 것을 직접 확인했다 —
+Turbopack 빌드와 기본 빌드 모두, 미들웨어 번들이 바깥을 참조하는 모듈은
+`node:async_hooks`·`node:buffer` 둘뿐이고 둘 다 지원되는 모듈이다.
+`@/lib/supabase/middleware`라는 문자열은 소스맵에만 있고 실제 코드에는 없다.
+실제로 `--turbopack`을 빼고 다시 배포해 봤지만 **같은 오류가 그대로 났다.**
+빌드 도구는 원인이 아니었다.
 
-> Turbopack 운영 빌드는 아직 베타다. 빌드 시간을 줄이려고 배포 경로를 흔들 이유가 없다.
-> 나중에 다시 켜고 싶다면 미리보기 배포가 실제로 올라가는지부터 확인할 것.
+그래서 두 가지를 고쳤다:
+
+1. `vercel.json`에 `"framework": "nextjs"`를 명시했다.
+   프로젝트가 옛날 정적 페이지 시절에 만들어져 프레임워크 설정이 비어 있었다(`framework: null`).
+   Next 프로젝트임을 알려 주면 미들웨어도 Next 쪽 경로로 처리된다.
+2. 뿌리 `middleware.ts`의 import를 상대 경로로 바꿨다.
+   누가 번들하든 풀리는 경로여야 한다.
+
+> 뿌리 `middleware.ts`에서는 앞으로도 `@/` 별칭을 쓰지 않는다. 파일에 주석으로 적어 뒀다.
 
 ### 바로 가는 링크
 

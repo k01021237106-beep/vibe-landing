@@ -709,25 +709,34 @@ Vercel 오류 코드는 `NOW_SANDBOX_WORKER_EDGE_FUNCTION_UNSUPPORTED_MODULES`.
 빌드 로그의 마지막 줄만 보면 "빌드 완료"라서 성공한 줄 알기 쉽다.
 **배포 상태(state)를 따로 봐야 한다.** 로그는 빌드 이야기만 한다.
 
-### 8. 원인은 코드가 아니라 빌드 도구였다
-같은 커밋을 손에서 처음부터 다시 빌드해 산출물을 직접 열어 봤다.
+### 8. 첫 진단이 틀렸다 — 그리고 배포가 그것을 증명했다
+`--turbopack`이 미들웨어를 조각 3개로 내는 것을 보고
+"Vercel이 그 조각들을 합치다 경로를 잃는다"고 판단해 `--turbopack`을 뺐다.
+근거도 있었다. 기본 빌드는 `server/middleware.js` 하나로 나오고,
+두 경우 모두 바깥을 참조하는 모듈은 `node:async_hooks`·`node:buffer`뿐이었다.
 
-- `next build --turbopack` → 미들웨어가 조각 3개로 나온다
-  (`edge-wrapper_….js`, `[root-of-the-server]__….js`, `turbopack-edge-wrapper_….js`)
-- `next build` (기본) → `server/edge-runtime-webpack.js` + `server/middleware.js` 두 개
+**틀렸다.** 기본 빌드로 배포해도 같은 오류가 글자 하나 다르지 않게 그대로 났다.
+산출물이 달라졌는데 오류가 그대로라면, 오류는 그 산출물에서 나온 것이 아니다.
+그 사실이 오히려 진짜 원인을 가리켰다.
 
-두 경우 모두 산출물이 바깥을 참조하는 모듈은 `node:async_hooks`와 `node:buffer`뿐이고,
-`@/lib/supabase/middleware`라는 문자열은 소스맵에만 있고 실제 코드에는 없다.
-즉 우리 코드에 지원되지 않는 import는 없다.
-Vercel이 Turbopack의 조각들을 하나의 Edge Function으로 합치는 과정에서
-경로 별칭이 풀리지 않은 채 남는 것이다.
+"직접 빌드해서 산출물을 열어 봤다"는 것만으로는 부족했다.
+내가 확인한 것은 **Next가 만든 산출물**이지 **Vercel이 배포한 산출물**이 아니었다.
+확인의 범위를 결론의 범위로 착각한 것이다.
 
-→ `package.json`의 `build`에서 `--turbopack`을 뺐다. 개발 서버는 그대로 쓴다.
-Turbopack 운영 빌드는 아직 베타다. 빌드 시간 몇 초를 아끼려고
-배포 경로를 흔들 이유가 없다.
+### 9. 진짜 원인은 `@/` 별칭이었다
+문제의 이름 `@/lib/supabase/middleware`는 뿌리 `middleware.ts`의
+**유일한 `@/` 별칭 import**다. `@/`는 `tsconfig.json`의 `paths`가 정하는 우리 규약이고
+Next는 이것을 푼다. 하지만 Vercel이 뿌리의 `middleware.ts`를 자기 방식으로 번들할 때는
+`paths`를 보지 않는다. `__vc__ns__`는 Next의 산출물 이름이 아니다.
 
-### 9. "추측하지 말고 확인한다"가 또 맞았다
-"빌드는 됐으니 미들웨어 코드에 Node 전용 모듈이 섞였겠지"가 첫 짐작이었다.
-`lib/supabase/middleware.ts`가 부르는 파일을 전부 열어 보니 그런 것이 없었고,
-직접 빌드해 산출물을 열어 보고서야 도구 문제라는 것이 나왔다.
-짐작대로 코드를 고쳤으면 멀쩡한 코드를 망가뜨리고 원인은 그대로 남았을 것이다.
+프로젝트가 옛날 정적 페이지 시절에 만들어져 **프레임워크 설정이 비어 있었다**(`framework: null`).
+Next 프로젝트라고 알려 주지 않았으니 Vercel이 자기 규칙으로 처리한 것이다.
+
+→ `vercel.json`에 `"framework": "nextjs"`를 명시하고,
+뿌리 `middleware.ts`의 import를 상대 경로로 바꿨다.
+누가 번들하든 풀리는 경로여야 한다. 파일에 왜 그런지 주석으로 남겼다.
+`--turbopack`은 원인이 아니었으므로 되돌렸다.
+
+### 10. 대시보드 설정도 저장소에 적어 둔다
+`framework: null` 같은 값은 화면 어딘가에만 있으면 아무도 다시 보지 않는다.
+`vercel.json`에 적어 두면 저장소가 스스로 말하고, 프로젝트를 다시 만들어도 따라온다.
