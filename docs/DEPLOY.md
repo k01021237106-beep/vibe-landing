@@ -195,24 +195,33 @@ update public.profiles set role = 'admin' where email = '운영자@example.com';
 
 ---
 
-## 4. 배포 보호 — 오픈 전 반드시 확인
+## 4. 배포 보호
 
-지금은 **Vercel Authentication이 켜져 있다.** Vercel 계정으로 로그인해야 사이트가 보인다.
+**현재 상태 (2026-09-04 확인):**
 
-준비하는 동안은 이게 안전하다 — 설정이 덜 된 사이트가 검색에 잡히거나
-남에게 보이지 않는다. 하지만 **판매를 시작하기 전에는 반드시 꺼야 한다.**
+| 보호 방식 | 상태 |
+|---|---|
+| Vercel Authentication (SSO) | **꺼짐** |
+| Password Protection | 꺼짐 |
+| Trusted IPs | 꺼짐 |
 
-켜진 채로 두면:
+즉 배포 주소를 **누구나 열 수 있다.**
+
+켜져 있으면 무엇이 막히는지 (다시 켤 일이 생겼을 때를 위해):
 
 - 손님이 사이트에 들어올 수 없다
 - 카카오 로그인이 돌아올 곳에서 막힌다
 - **토스 결제가 끝난 뒤 돌아오는 주소에서 막힌다** — 돈만 빠져나간 상태가 된다
 - 검색엔진이 색인하지 못한다
 
-끄는 곳: Settings → Deployment Protection → Vercel Authentication → Disabled
+여는 곳: <https://vercel.com/melavyn/vibe-landing/settings/deployment-protection>
 
-> 순서가 중요하다. 환경변수 → 카카오·Vimeo 설정 → 결제 테스트까지
-> 보호를 켠 채로 마치고, 마지막에 끈다.
+> 지금은 열려 있지만 **판매 시작 전 준비가 끝난 것은 아니다.**
+> 약관 3종은 법률 검토 전 초안이고, 후기는 전부 샘플이고,
+> 사업자정보는 `추후 입력` 자리표시다. 아래 7번을 마치기 전에는 홍보하지 않는다.
+>
+> 미리보기 배포에는 Vercel이 `x-robots-tag: noindex`를 자동으로 붙인다.
+> 검색에 잡히지는 않지만, 주소를 아는 사람은 볼 수 있다.
 
 ---
 
