@@ -44,4 +44,4 @@ next-env.d.ts
 
 # 폰트 (prebuild 시 scripts/setup-fonts.mjs가 node_modules에서 생성)
 /public/fonts/pretendard/
-/public/fonts/pretendard.css
+/public/fonts/fonts.css

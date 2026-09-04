@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 import { publicEnv } from "@/lib/env";
 import type { Database } from "@/lib/supabase/database.types";
@@ -50,4 +51,25 @@ export async function getCurrentUser() {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
+}
+
+/**
+ * 공개 데이터 전용 클라이언트. **쿠키를 읽지 않는다.**
+ *
+ * 강의·커리큘럼·후기·FAQ는 로그인 여부와 무관하게 같은 내용이다.
+ * 그런데 세션 클라이언트로 읽으면 쿠키에 손을 대게 되고,
+ * 그러면 그 페이지는 무조건 동적 렌더링이 된다.
+ *
+ * 실제로 sitemap.xml이 이 때문에 빌드 시점에 만들어지지 못하고
+ * "쿠키를 썼다"는 오류와 함께 강의 주소가 통째로 빠졌다.
+ * 로그인 정보가 필요 없는 조회는 이 클라이언트를 쓴다.
+ *
+ * 권한은 anon과 같다 — 볼 수 있는 것은 전부 RLS 정책이 정한다.
+ */
+export function createPublicClient() {
+  return createSupabaseClient<Database>(
+    publicEnv.supabaseUrl,
+    publicEnv.supabasePublishableKey,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
 }

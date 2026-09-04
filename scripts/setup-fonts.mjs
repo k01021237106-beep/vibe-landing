@@ -17,7 +17,8 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = path.join(root, "node_modules/pretendard/dist/web/static");
 const outDir = path.join(root, "public/fonts/pretendard");
-const outCss = path.join(root, "public/fonts/pretendard.css");
+const outCss = path.join(root, "public/fonts/fonts.css");
+const paperlogyFile = path.join(root, "public/fonts/paperlogy/Paperlogy-9Black.woff2");
 
 /** 실제로 쓰는 굵기만 — 본문 400, 강조 500, 헤드라인 폴백 900 */
 const WEIGHTS = [
@@ -67,10 +68,30 @@ for (const fileName of needed) {
   await copyFile(path.join(src, "woff2-dynamic-subset", fileName), path.join(outDir, fileName));
 }
 
+/*
+ * 헤드라인 글꼴 Paperlogy는 파일이 있을 때만 @font-face를 넣는다.
+ * 없는데도 넣어 두면 브라우저가 페이지마다 404를 한 번씩 낸다 —
+ * 화면은 폴백으로 멀쩡해 보여서 한동안 눈치채지 못했다.
+ */
+const hasPaperlogy = existsSync(paperlogyFile);
+const paperlogyRule = hasPaperlogy
+  ? `@font-face {
+\tfont-family: 'Paperlogy';
+\tfont-style: normal;
+\tfont-weight: 900;
+\tfont-display: swap;
+\tsrc: url(/fonts/paperlogy/Paperlogy-9Black.woff2) format('woff2');
+}
+`
+  : "/* Paperlogy 파일이 없어 건너뜁니다. public/fonts/paperlogy/README.md 참고 */\n";
+
 const header = `/* 이 파일은 scripts/setup-fonts.mjs가 생성합니다. 직접 고치지 마세요. */
 /* Pretendard — SIL Open Font License 1.1, (c) 2021 Kil Hyung-jin */
 `;
-await writeFile(outCss, header + kept.join("\n") + "\n", "utf8");
+await writeFile(outCss, header + paperlogyRule + kept.join("\n") + "\n", "utf8");
 
 const copied = (await readdir(outDir)).length;
-console.log(`[fonts] Pretendard 준비 완료 — @font-face ${kept.length}개, 서브셋 파일 ${copied}개`);
+console.log(
+  `[fonts] 준비 완료 — Pretendard @font-face ${kept.length}개, 서브셋 ${copied}개` +
+    `, Paperlogy ${hasPaperlogy ? "적용" : "없음(Pretendard 900으로 대체)"}`,
+);

@@ -10,6 +10,7 @@ import { Outcome } from "@/components/landing/outcome";
 import { PainRelief } from "@/components/landing/pain-relief";
 import { Pricing } from "@/components/landing/pricing";
 import { Reviews } from "@/components/landing/reviews";
+import { CourseJsonLd } from "@/components/seo/json-ld";
 import { flagshipCourseSlug } from "@/lib/config";
 import { getCoursePageData } from "@/lib/content";
 
@@ -30,6 +31,7 @@ export default async function Home() {
 
   return (
     <>
+      <CourseJsonLd course={course} lessonCount={lessons.length} faqs={faqs} />
       <Hero courseTitle={course.title} />
       <Audience />
       <PainRelief />

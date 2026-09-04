@@ -3,27 +3,14 @@
 
 /* ==========================================================================
    폰트
-   - 본문 Pretendard: /public/fonts/pretendard.css (prebuild 스크립트가 생성)
+   - 본문 Pretendard, 헤드라인 Paperlogy: /public/fonts/fonts.css
+     (scripts/setup-fonts.mjs가 prebuild에서 생성한다)
    - 코드 JetBrains Mono: next/font/google → --font-jetbrains-mono
-   - 헤드라인 Paperlogy: 아래 @font-face. 파일이 없으면 Pretendard 900으로 자연 대체된다.
-   ========================================================================== */
 
-/*
- * TODO: Paperlogy Black(9Black) woff2 파일을
- *       public/fonts/paperlogy/Paperlogy-9Black.woff2 에 넣으면 자동 적용된다.
- *       (npm·구글폰트에 없는 서체라 저장소에 직접 넣어야 한다. 자세한 안내는 README 참고)
- *       파일이 없는 동안에는 아래 font-family 폴백에 따라 Pretendard 900이 쓰인다.
- */
-@font-face {
-  font-family: "Paperlogy";
-  font-style: normal;
-  font-weight: 900;
-  font-display: swap;
-  src:
-    local("Paperlogy 9 Black"),
-    local("Paperlogy-9Black"),
-    url("/fonts/paperlogy/Paperlogy-9Black.woff2") format("woff2");
-}
+   Paperlogy는 파일이 있을 때만 @font-face가 생성된다.
+   없으면 아래 --font-display-stack의 폴백에 따라 Pretendard 900이 쓰인다.
+   (예전에는 @font-face를 무조건 넣어 뒀는데, 파일이 없어서 페이지마다 404가 났다)
+   ========================================================================== */
 
 /* ==========================================================================
    컬러 토큰 — 화면에서 색을 하드코딩하지 않는다. 반드시 이 변수만 참조한다.

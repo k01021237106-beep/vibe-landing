@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "강의 목록",
   description:
     "코딩을 몰라도 AI와 함께 내 서비스를 만들고 배포하는 첫배포의 강의 목록입니다.",
+  alternates: { canonical: "/courses" },
 };
 
 export default async function CoursesPage() {

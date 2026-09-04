@@ -1,10 +1,14 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 import { fixtures } from "@/lib/fixtures/content";
 
 /**
  * 공개 페이지가 읽는 콘텐츠.
+ *
+ * 쿠키를 읽지 않는 클라이언트를 쓴다 — 로그인 여부와 무관한 내용이고,
+ * 쿠키에 손을 대면 그 페이지가 무조건 동적 렌더링이 되기 때문이다.
+ * (sitemap.xml이 실제로 그 때문에 빌드 시점에 만들어지지 못했다)
  *
  * 강의·차시·후기·FAQ의 원본은 **데이터베이스**다.
  * 강의를 추가하는 일이 코드 수정 없이 행 추가만으로 끝나야 하고,
@@ -76,7 +80,7 @@ export async function getPublishedCourses(): Promise<Course[]> {
     return fixtures.courses;
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("courses")
     .select(COURSE_COLUMNS)
@@ -93,7 +97,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     return fixtures.courses.find((c) => c.slug === slug) ?? null;
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("courses")
     .select(COURSE_COLUMNS)
@@ -111,7 +115,7 @@ export async function getLessons(courseId: string): Promise<Lesson[]> {
     return fixtures.lessons;
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("lessons")
     .select(LESSON_COLUMNS)
@@ -128,7 +132,7 @@ export async function getReviews(courseId?: string): Promise<Review[]> {
     return fixtures.reviews;
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   let query = supabase
     .from("reviews")
     .select("id, author_name, author_role, rating, body, is_sample")
@@ -148,7 +152,7 @@ export async function getFaqs(courseId?: string): Promise<Faq[]> {
     return fixtures.faqs;
   }
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   let query = supabase
     .from("faqs")
     .select("id, question, answer")

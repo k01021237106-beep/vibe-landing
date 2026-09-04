@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   title: "무료 1강 신청",
   description:
     "이름과 연락처만 남기시면 첫 강의를 바로 보실 수 있습니다. 결제 정보는 받지 않습니다.",
+  alternates: { canonical: "/free" },
+  openGraph: {
+    type: "website",
+    title: "무료 1강 신청 | 첫배포",
+    description: "이름과 연락처만 남기시면 첫 강의를 바로 보실 수 있습니다.",
+    url: "/free",
+  },
 };
 
 export default async function FreePage() {

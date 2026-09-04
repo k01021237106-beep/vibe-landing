@@ -10,10 +10,28 @@ export const site = {
   tagline: "코딩을 몰라도, AI와 함께 내 서비스를 세상에 배포합니다",
   description:
     "코딩을 전혀 모르는 초보자도 AI와 함께 실제 서비스를 만들고 배포할 수 있도록 돕는 온라인 강의입니다.",
-  // TODO: 배포 도메인이 정해지면 실제 주소로 교체
-  url: "https://example.vercel.app",
   locale: "ko_KR",
 } as const;
+
+/**
+ * 사이트의 정식 주소.
+ *
+ * 표준 링크(canonical)·사이트맵·공유 카드 이미지가 절대 주소를 필요로 한다.
+ * 배포할 때 `NEXT_PUBLIC_SITE_URL`을 실제 주소로 넣는다.
+ * Vercel은 `VERCEL_PROJECT_PRODUCTION_URL`을 자동으로 넣어 주므로 그것도 받는다.
+ *
+ * ⚠️ 주소가 틀리면 검색 결과와 공유 카드가 엉뚱한 곳을 가리킨다.
+ *    로컬에서는 localhost로 떨어지지만, 배포 환경에서는 반드시 설정해야 한다.
+ */
+export function getSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercel) return `https://${vercel}`;
+
+  return "http://localhost:3000";
+}
 
 /**
  * 랜딩이 보여 주는 대표 강의의 slug.

@@ -6,6 +6,7 @@ import { FaqSection } from "@/components/landing/faq";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Pricing } from "@/components/landing/pricing";
 import { Reviews } from "@/components/landing/reviews";
+import { CourseJsonLd } from "@/components/seo/json-ld";
 import { getCourseBySlug, getCoursePageData } from "@/lib/content";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -16,9 +17,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   if (!course) return { title: "찾을 수 없는 강의" };
 
+  const description = course.subtitle ?? course.description ?? undefined;
+
   return {
     title: course.title,
-    description: course.subtitle ?? course.description ?? undefined,
+    description,
+    alternates: { canonical: `/courses/${slug}` },
+    openGraph: {
+      type: "website",
+      title: course.title,
+      description,
+      url: `/courses/${slug}`,
+    },
   };
 }
 
@@ -31,6 +41,7 @@ export default async function CourseDetailPage({ params }: Params) {
 
   return (
     <>
+      <CourseJsonLd course={course} lessonCount={lessons.length} faqs={faqs} />
       <section className="bg-ink px-5 py-16 text-ink-fg lg:px-8 lg:py-24">
         <div className="mx-auto max-w-6xl">
           <h1 className="max-w-3xl text-3xl leading-tight sm:text-4xl lg:text-5xl">

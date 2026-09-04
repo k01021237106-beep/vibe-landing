@@ -32,6 +32,8 @@ Pretendard 웹폰트를 `public/fonts/`에 자동으로 만든다. 이 산출물
 | `npm run typecheck` | 타입 검사 |
 | `npm run check:layout` | 전 페이지 스크린샷 + 레이아웃·접근성 검사 |
 | `npm run check:bundle` | 클라이언트 번들에 서버 전용 값이 섞였는지 검사 |
+| `npm run check:secrets` | 저장소와 커밋 이력에 비밀값이 들어갔는지 검사 |
+| `npm run og` | 공유 카드 이미지(1200x630) 생성 |
 | `npm test` | 단위 테스트 (연락처 정규화, 접근권 서명) |
 | `npm run test:db` | RLS·가입 트리거·무료 퍼널 검증 (`SUPABASE_DB_URL` 필요) |
 
@@ -57,6 +59,7 @@ Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라
 
 | 이름 | 용도 |
 |---|---|
+| `NEXT_PUBLIC_SITE_URL` | 사이트 정식 주소 (canonical·사이트맵·공유 카드) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 주소 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개용 키 — 할 수 있는 일은 RLS가 정한다 |
 | `LEAD_ACCESS_SECRET` | 무료 1강 접근권 쿠키 서명 (서버 전용, 16자 이상) |
@@ -168,7 +171,10 @@ supabase/
   migrations/         정방향 SQL (+ down/ 역방향)
   tests/              RLS·가입 트리거 검증
 scripts/
-  setup-fonts.mjs     Pretendard 준비 (prebuild)
+  setup-fonts.mjs     글꼴 준비 (prebuild)
+  generate-og-image.mjs  공유 카드 이미지
+  check-bundle.mjs    번들 유출 검사
+  check-secrets.sh    비밀값 검사
   check-layout.mjs    레이아웃 Quality Gate
   test-db.sh          데이터베이스 검증 실행
 docs/                 브리프·계획·Supabase 설정·스크린샷
