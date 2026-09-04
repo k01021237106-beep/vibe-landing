@@ -10,19 +10,45 @@
 | Vercel 프로젝트 | `melavyn/vibe-landing` — **이미 GitHub 저장소에 연결됨** |
 | 자동 배포 | 푸시할 때마다 동작 중 |
 | 운영 배포 | 아직 옛날 정적 페이지 (`main` 브랜치) |
-| 최근 빌드 | **실패** — 환경변수가 없어서 |
+| 환경변수 | **입력 완료** — 6개 × (Preview, Production) = 12줄 |
+| 최근 빌드 | 환경변수 오류는 통과. 미들웨어 배포에서 실패 → 아래 참고 |
 | 배포 보호 | **켜짐** (Vercel 로그인해야 볼 수 있음) |
 
-빌드 실패 메시지는 이렇게 나온다. 우리가 의도한 것이다 —
-값이 없으면 화면이 이상하게 동작하는 대신 빌드 단계에서 바로 멈춘다.
+### 지나온 실패 두 가지
+
+**1) 환경변수 없음 (해결됨)**
 
 ```
 ✓ Compiled successfully in 14.5s
 Error: 환경변수 NEXT_PUBLIC_SUPABASE_URL이(가) 없습니다.
 ```
 
-컴파일·타입·린트는 통과했고 환경변수에서만 멈췄다.
-아래 1번을 채우면 다음 배포부터 성공한다.
+우리가 의도한 것이었다 — 값이 없으면 화면이 이상하게 동작하는 대신
+빌드 단계에서 바로 멈춘다 (`lib/env.ts`). 값을 넣자 이 지점은 통과했다.
+
+**2) 미들웨어를 Vercel이 못 싣는다 (해결됨 — 빌드 도구 교체)**
+
+```
+Build Completed in /vercel/output [58s]
+Deploying outputs...
+The Edge Function "middleware" is referencing unsupported modules:
+	- __vc__ns__/0/middleware.js: @/lib/supabase/middleware
+```
+
+빌드는 전부 성공한 뒤(22개 페이지 생성까지 끝났다) **출력물을 올리는 단계**에서 멈췄다.
+Vercel 쪽 오류 코드는 `NOW_SANDBOX_WORKER_EDGE_FUNCTION_UNSUPPORTED_MODULES`다.
+
+원인은 코드가 아니라 빌드 도구였다. `next build --turbopack`이 만드는 미들웨어 산출물은
+`[root-of-the-server]__….js` 같은 조각 여러 개인데, Vercel이 이것을 하나의
+Edge Function으로 합치는 과정에서 `@/lib/supabase/middleware` 경로가 풀리지 않은 채 남는다.
+같은 코드를 기본 빌드(`next build`)로 만들면 `server/middleware.js` 하나로 나오고
+바깥을 참조하는 모듈은 `node:async_hooks`·`node:buffer`뿐이다 — 둘 다 지원되는 모듈이다.
+
+그래서 `package.json`의 `build`에서 `--turbopack`을 뺐다.
+개발 서버(`npm run dev`)는 그대로 Turbopack을 쓴다. 빠르고, 배포 산출물과 무관하다.
+
+> Turbopack 운영 빌드는 아직 베타다. 빌드 시간을 줄이려고 배포 경로를 흔들 이유가 없다.
+> 나중에 다시 켜고 싶다면 미리보기 배포가 실제로 올라가는지부터 확인할 것.
 
 ### 바로 가는 링크
 

@@ -2,7 +2,7 @@
 
 **Status**: 🔄 진행 중 — Phase 7 전반부 완료 (배포·실결제는 키 대기)
 **Started**: 2026-09-03
-**Last Updated**: 2026-09-03
+**Last Updated**: 2026-09-04
 
 ---
 
@@ -689,3 +689,45 @@ Chromium으로 한 번 그려 PNG로 커밋했다 — 배포 환경의 폰트 �
 개발 서버는 번들이 압축되지 않고 최적화도 꺼져 있어 성능 점수가 실제와 크게 다르다.
 접근성·SEO·모범사례는 DOM 기반이라 개발 서버에서도 의미가 있어 측정했고 셋 다 100이다.
 **성능은 배포 후 실제 주소에서 재야 한다.**
+
+---
+
+## Phase 7 배포 시도 배운 점 (2026-09-04)
+
+### 7. 빌드가 성공해도 배포는 실패할 수 있다
+환경변수를 다 넣자 빌드는 끝까지 통과했다 —
+컴파일, 타입, 린트, 페이지 데이터 수집, 정적 페이지 22개 생성,
+`Build Completed in /vercel/output [58s]`까지 갔다.
+그리고 `Deploying outputs...`에서 실패했다.
+
+```
+The Edge Function "middleware" is referencing unsupported modules:
+	- __vc__ns__/0/middleware.js: @/lib/supabase/middleware
+```
+
+Vercel 오류 코드는 `NOW_SANDBOX_WORKER_EDGE_FUNCTION_UNSUPPORTED_MODULES`.
+빌드 로그의 마지막 줄만 보면 "빌드 완료"라서 성공한 줄 알기 쉽다.
+**배포 상태(state)를 따로 봐야 한다.** 로그는 빌드 이야기만 한다.
+
+### 8. 원인은 코드가 아니라 빌드 도구였다
+같은 커밋을 손에서 처음부터 다시 빌드해 산출물을 직접 열어 봤다.
+
+- `next build --turbopack` → 미들웨어가 조각 3개로 나온다
+  (`edge-wrapper_….js`, `[root-of-the-server]__….js`, `turbopack-edge-wrapper_….js`)
+- `next build` (기본) → `server/edge-runtime-webpack.js` + `server/middleware.js` 두 개
+
+두 경우 모두 산출물이 바깥을 참조하는 모듈은 `node:async_hooks`와 `node:buffer`뿐이고,
+`@/lib/supabase/middleware`라는 문자열은 소스맵에만 있고 실제 코드에는 없다.
+즉 우리 코드에 지원되지 않는 import는 없다.
+Vercel이 Turbopack의 조각들을 하나의 Edge Function으로 합치는 과정에서
+경로 별칭이 풀리지 않은 채 남는 것이다.
+
+→ `package.json`의 `build`에서 `--turbopack`을 뺐다. 개발 서버는 그대로 쓴다.
+Turbopack 운영 빌드는 아직 베타다. 빌드 시간 몇 초를 아끼려고
+배포 경로를 흔들 이유가 없다.
+
+### 9. "추측하지 말고 확인한다"가 또 맞았다
+"빌드는 됐으니 미들웨어 코드에 Node 전용 모듈이 섞였겠지"가 첫 짐작이었다.
+`lib/supabase/middleware.ts`가 부르는 파일을 전부 열어 보니 그런 것이 없었고,
+직접 빌드해 산출물을 열어 보고서야 도구 문제라는 것이 나왔다.
+짐작대로 코드를 고쳤으면 멀쩡한 코드를 망가뜨리고 원인은 그대로 남았을 것이다.
