@@ -31,7 +31,8 @@ Pretendard 웹폰트를 `public/fonts/`에 자동으로 만든다. 이 산출물
 | `npm run lint` | ESLint |
 | `npm run typecheck` | 타입 검사 |
 | `npm run check:layout` | 전 페이지 스크린샷 + 레이아웃·접근성 검사 |
-| `npm run test:db` | RLS·가입 트리거 검증 (`SUPABASE_DB_URL` 필요) |
+| `npm test` | 단위 테스트 (연락처 정규화, 접근권 서명) |
+| `npm run test:db` | RLS·가입 트리거·무료 퍼널 검증 (`SUPABASE_DB_URL` 필요) |
 
 `check:layout`은 서버가 떠 있어야 한다(`npm run dev` 또는 `npm start`).
 넘침·터치영역 48px·본문 글꼴·헤딩 순서(h1→h2→h3)·WCAG AA 대비를 자동으로 본다.
@@ -57,7 +58,12 @@ Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 주소 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개용 키 — 할 수 있는 일은 RLS가 정한다 |
+| `LEAD_ACCESS_SECRET` | 무료 1강 접근권 쿠키 서명 (서버 전용, 16자 이상) |
+| `SUPABASE_SERVICE_ROLE_KEY` | 영상 주소 조회 (서버 전용, RLS 우회) |
 | `USE_CONTENT_FIXTURES` | (선택) 데이터베이스에 닿지 못할 때 고정 데이터로 화면 확인 |
+
+⚠️ `LEAD_ACCESS_SECRET`과 `SUPABASE_SERVICE_ROLE_KEY`에는 `NEXT_PUBLIC_` 접두사를
+붙이지 않는다. 붙이는 순간 브라우저로 나간다.
 
 값이 없으면 시작 시점에 한국어 메시지와 함께 바로 멈춘다(`lib/env.ts`).
 배포한 뒤 "로그인이 왜 안 되지"를 헤매는 것보다 낫다.
@@ -129,6 +135,9 @@ components/
 lib/
   config.ts           브랜드·연락처·사업자정보·내비게이션
   content.ts          강의·차시·후기·FAQ 조회 (원본은 DB)
+  phone.ts            연락처 정규화·신청 내용 검사 (순수 함수)
+  free-access.ts      무료 1강 접근권 서명·검증
+  free-lesson.ts      무료 1강 영상 주소 (자격 확인 후에만 호출)
   fixtures/           개발용 고정 데이터
   env.ts              환경변수 접근 지점 (없으면 즉시 중단)
   utils.ts            cn() 헬퍼
@@ -136,6 +145,7 @@ lib/
     client.ts         브라우저용
     server.ts         서버 컴포넌트·라우트 핸들러용
     middleware.ts     세션 갱신
+    admin.ts          서버 전용 (RLS 우회 — 쓰는 곳을 최소로)
     database.types.ts 스키마에서 생성 (직접 고치지 않는다)
 supabase/
   migrations/         정방향 SQL (+ down/ 역방향)
