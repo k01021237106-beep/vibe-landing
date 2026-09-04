@@ -33,6 +33,8 @@ const PAGES = [
   { name: "free", path: "/free" },
   { name: "free-watch", path: "/free/watch", needsFreeAccess: true },
   { name: "login", path: "/login" },
+  { name: "checkout-success", path: "/checkout/success" },
+  { name: "checkout-fail", path: "/checkout/fail?slug=first-deploy-vibecoding&message=%EC%B9%B4%EB%93%9C%EC%82%AC%EC%97%90%EC%84%9C%20%EA%B1%B0%EC%A0%88%ED%96%88%EC%8A%B5%EB%8B%88%EB%8B%A4&code=REJECT_CARD_COMPANY" },
   { name: "legal-terms", path: "/legal/terms" },
   { name: "legal-privacy", path: "/legal/privacy" },
   { name: "legal-refund", path: "/legal/refund" },

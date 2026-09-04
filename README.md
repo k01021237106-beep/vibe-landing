@@ -59,11 +59,17 @@ Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 주소 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개용 키 — 할 수 있는 일은 RLS가 정한다 |
 | `LEAD_ACCESS_SECRET` | 무료 1강 접근권 쿠키 서명 (서버 전용, 16자 이상) |
-| `SUPABASE_SERVICE_ROLE_KEY` | 영상 주소 조회 (서버 전용, RLS 우회) |
+| `SUPABASE_SERVICE_ROLE_KEY` | 영상 주소·주문·수강권 (서버 전용, RLS 우회) |
+| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 결제창 (공개돼도 되는 값) |
+| `TOSS_SECRET_KEY` | 결제 승인 (서버 전용) |
 | `USE_CONTENT_FIXTURES` | (선택) 데이터베이스에 닿지 못할 때 고정 데이터로 화면 확인 |
 
-⚠️ `LEAD_ACCESS_SECRET`과 `SUPABASE_SERVICE_ROLE_KEY`에는 `NEXT_PUBLIC_` 접두사를
-붙이지 않는다. 붙이는 순간 브라우저로 나간다.
+⚠️ `LEAD_ACCESS_SECRET`·`SUPABASE_SERVICE_ROLE_KEY`·`TOSS_SECRET_KEY`에는
+`NEXT_PUBLIC_` 접두사를 붙이지 않는다. 붙이는 순간 브라우저로 나가고,
+특히 토스 Secret Key가 나가면 결제를 임의로 승인할 수 있게 된다.
+
+키가 없으면 결제 화면이 "준비 중"으로 표시되고 승인 API는 503과 한국어 안내를 돌려준다.
+페이지가 깨지지는 않는다.
 
 값이 없으면 시작 시점에 한국어 메시지와 함께 바로 멈춘다(`lib/env.ts`).
 배포한 뒤 "로그인이 왜 안 되지"를 헤매는 것보다 낫다.
@@ -138,6 +144,11 @@ lib/
   phone.ts            연락처 정규화·신청 내용 검사 (순수 함수)
   free-access.ts      무료 1강 접근권 서명·검증
   free-lesson.ts      무료 1강 영상 주소 (자격 확인 후에만 호출)
+  payments/
+    confirm.ts        결제 승인 판단 — 금액 위변조를 막는 핵심
+    orders.ts         주문 저장소 (가격을 DB에서 읽는다)
+    toss.ts           토스 승인 API
+    consent.ts        결제 전 필수 동의 검사
   fixtures/           개발용 고정 데이터
   env.ts              환경변수 접근 지점 (없으면 즉시 중단)
   utils.ts            cn() 헬퍼

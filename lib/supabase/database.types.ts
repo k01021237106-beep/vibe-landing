@@ -426,6 +426,21 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      /** 결제 승인 후 주문 상태 변경 + 수강권 발급 (한 트랜잭션, service_role 전용) */
+      complete_paid_order: {
+        Args: {
+          p_order_code: string
+          p_payment_key: string
+          p_method: string | null
+          p_raw: Json
+        }
+        Returns: { order_id: string; enrollment_id: string | null }[]
+      }
+      /** 환불 + 수강권 회수 (한 트랜잭션, service_role 전용) */
+      refund_order: {
+        Args: { p_order_code: string }
+        Returns: { order_id: string }[]
+      }
     }
     Enums: {
       [_ in never]: never
