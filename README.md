@@ -30,10 +30,11 @@ Pretendard 웹폰트를 `public/fonts/`에 자동으로 만든다. 이 산출물
 | `npm start` | 빌드 결과 실행 |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | 타입 검사 |
-| `npm run check:layout` | 375/768/1440px 스크린샷 + 레이아웃 검사 |
+| `npm run check:layout` | 전 페이지 스크린샷 + 레이아웃·접근성 검사 |
 | `npm run test:db` | RLS·가입 트리거 검증 (`SUPABASE_DB_URL` 필요) |
 
-`check:layout`은 `npm start`로 서버가 떠 있어야 한다.
+`check:layout`은 서버가 떠 있어야 한다(`npm run dev` 또는 `npm start`).
+넘침·터치영역 48px·본문 글꼴·헤딩 순서(h1→h2→h3)·WCAG AA 대비를 자동으로 본다.
 Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라우저가 다르면
 `CHROMIUM_PATH=/opt/pw-browsers/chromium npm run check:layout`처럼 경로를 넘긴다.
 
@@ -56,6 +57,7 @@ Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 주소 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개용 키 — 할 수 있는 일은 RLS가 정한다 |
+| `USE_CONTENT_FIXTURES` | (선택) 데이터베이스에 닿지 못할 때 고정 데이터로 화면 확인 |
 
 값이 없으면 시작 시점에 한국어 메시지와 함께 바로 멈춘다(`lib/env.ts`).
 배포한 뒤 "로그인이 왜 안 되지"를 헤매는 것보다 낫다.
@@ -121,8 +123,13 @@ components/
   layout/             헤더·푸터 셸
   brand/              로고
   ui/                 shadcn/ui 규약 컴포넌트
+components/
+  landing/            랜딩 섹션
+  legal/              법적 고지 페이지 뼈대
 lib/
-  config.ts           가격·브랜드·연락처·사업자정보 단일 정의
+  config.ts           브랜드·연락처·사업자정보·내비게이션
+  content.ts          강의·차시·후기·FAQ 조회 (원본은 DB)
+  fixtures/           개발용 고정 데이터
   env.ts              환경변수 접근 지점 (없으면 즉시 중단)
   utils.ts            cn() 헬퍼
   supabase/
@@ -142,8 +149,15 @@ docs/                 브리프·계획·Supabase 설정·스크린샷
 
 ### 값을 바꿀 때
 
-가격·브랜드명·연락처·사업자정보는 **`lib/config.ts` 한 곳에만** 있다.
-화면에 숫자나 상호를 직접 적지 않는다. 가격은 임시값이라 자주 바뀐다.
+| 무엇 | 어디 |
+|---|---|
+| 강의 제목·가격·커리큘럼·후기·FAQ | **데이터베이스** (`courses` `lessons` `reviews` `faqs`) |
+| 브랜드명·연락처·사업자정보·내비게이션 | `lib/config.ts` |
+| 랜딩 카피(히어로·페인 해소 등) | `components/landing/` |
+
+가격을 `lib/config.ts`에 두지 않는 이유: 결제 승인 때 서버가 DB 값으로 금액을 재검증한다.
+화면에 보이는 가격이 다른 곳에서 오면 표시가와 청구액이 어긋날 수 있다.
+가격을 바꾸려면 `courses` 행을 고친다 — 배포가 필요 없다.
 
 ## 보안 원칙 (타협 불가)
 
@@ -162,3 +176,8 @@ docs/                 브리프·계획·Supabase 설정·스크린샷
 - [ ] 최종 가격 확정
 - [ ] 카카오 로그인 대시보드 설정 ([`docs/SUPABASE.md`](docs/SUPABASE.md))
 - [ ] `lessons.vimeo_id`를 실제 Vimeo ID로 교체 (비공개 + 도메인 제한 후)
+- [ ] **법적 고지 3종을 전문가에게 검토받기** — 이용약관·개인정보처리방침·환불 규정은
+      일반적인 사례를 참고한 초안이다. 검토 전에 판매를 시작하지 않는다.
+- [ ] 법적 고지 3종의 시행일을 실제 날짜로 교체
+- [ ] 강사 소개를 실제 이력·사진으로 교체 (`components/landing/instructor.tsx`)
+- [ ] 개인정보처리방침의 처리위탁 표가 실제 사용 업체와 맞는지 확인

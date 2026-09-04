@@ -15,15 +15,15 @@ export const site = {
   locale: "ko_KR",
 } as const;
 
-/** 대표 강의. 강의가 늘어나면 DB(courses)가 원본이 되고 이 값은 랜딩 기본값으로만 쓴다. */
-export const flagshipCourse = {
-  slug: "first-deploy-vibecoding",
-  title: "첫배포 바이브코딩 입문",
-  /** 정가(원) — ⚠️ 임시 가격. 실제 판매 전 조정 예정 */
-  listPrice: 198_000,
-  /** 판매가(원) — ⚠️ 임시 가격. 오픈 할인 */
-  salePrice: 99_000,
-} as const;
+/**
+ * 랜딩이 보여 주는 대표 강의의 slug.
+ *
+ * ⚠️ 강의 제목·가격은 여기에 두지 않는다. 원본은 데이터베이스(`courses`)다.
+ *    결제 승인 때 서버가 DB 값으로 금액을 재검증하므로,
+ *    화면에 보이는 가격이 다른 곳에서 오면 표시가와 청구액이 어긋날 수 있다.
+ *    가격을 바꾸려면 `courses` 행을 고친다 — 배포가 필요 없다.
+ */
+export const flagshipCourseSlug = "first-deploy-vibecoding";
 
 /** 화면 표시용 금액 포맷. 예) 99000 → "99,000원" */
 export function formatPrice(won: number): string {
@@ -74,7 +74,3 @@ export const legalNav = [
 
 /** 사이트 최우선 전환 목표 — 결제보다 항상 위에 둔다 */
 export const primaryCta = { label: "무료 1강 신청하기", href: "/free" } as const;
-export const secondaryCta = {
-  label: "강의 자세히 보기",
-  href: `/courses/${flagshipCourse.slug}`,
-} as const;
