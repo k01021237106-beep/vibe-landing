@@ -33,6 +33,7 @@ Pretendard 웹폰트를 `public/fonts/`에 자동으로 만든다. 이 산출물
 | `npm run check:layout` | 전 페이지 스크린샷 + 레이아웃·접근성 검사 |
 | `npm run check:bundle` | 클라이언트 번들에 서버 전용 값이 섞였는지 검사 |
 | `npm run check:secrets` | 저장소와 커밋 이력에 비밀값이 들어갔는지 검사 |
+| `npm run check:env` | 환경변수가 제대로 들어갔는지 검사 (값은 출력하지 않음) |
 | `npm run og` | 공유 카드 이미지(1200x630) 생성 |
 | `npm test` | 단위 테스트 (연락처 정규화, 접근권 서명) |
 | `npm run test:db` | RLS·가입 트리거·무료 퍼널 검증 (`SUPABASE_DB_URL` 필요) |
@@ -80,6 +81,10 @@ Playwright가 내려받은 브라우저와 이 환경에 미리 설치된 브라
 
 자세한 데이터베이스 설정과 **카카오 로그인 대시보드 설정**은
 [`docs/SUPABASE.md`](docs/SUPABASE.md)를 본다.
+**배포 절차와 Vercel 환경변수**는 [`docs/DEPLOY.md`](docs/DEPLOY.md)에 정리해 두었다.
+
+⚠️ 환경변수는 저장소에 넣지 않는다. Vercel 대시보드에서 입력한다.
+넣은 뒤 `vercel env pull .env.vercel && ENV_FILE=.env.vercel npm run check:env`로 확인한다.
 
 ## 디자인 시스템
 

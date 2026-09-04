@@ -7,6 +7,12 @@
 # 실행: npm run check:secrets
 set -uo pipefail
 
+# 검사 도구 자신은 제외한다.
+# 이 파일들은 '무엇이 비밀값처럼 생겼는가'를 정의하므로 패턴을 문자열로 갖고 있다.
+# 제외하지 않으면 스캐너가 자기 자신을 잡는다 — 실제로 한 번 그랬다.
+SELF_EXCLUDE_GIT=(':!scripts/check-secrets.sh' ':!scripts/check-env.mjs')
+SELF_EXCLUDE_GREP=(--exclude='check-secrets.sh' --exclude='check-env.mjs')
+
 fail=0
 note() { printf "  %s\n" "$1"; }
 bad()  { fail=1; printf "  ✗ %s\n" "$1"; }
@@ -25,7 +31,7 @@ echo
 echo "2. 커밋 이력에 비밀값 이름이 들어간 적이 있는지"
 # -S는 그 문자열이 추가되거나 삭제된 커밋을 찾는다.
 for key in SUPABASE_SERVICE_ROLE_KEY TOSS_SECRET_KEY LEAD_ACCESS_SECRET; do
-  hits=$(git log --oneline -S "$key" -- . ':!*.example' ':!README.md' ':!docs/*' ':!scripts/check-secrets.sh' 2>/dev/null || true)
+  hits=$(git log --oneline -S "$key" -- . ':!*.example' ':!README.md' ':!docs/*' "${SELF_EXCLUDE_GIT[@]}" 2>/dev/null || true)
   if [[ -n "$hits" ]]; then
     note "$key — 이름이 등장한 커밋:"
     echo "$hits" | sed 's/^/      /'
@@ -46,7 +52,7 @@ patterns=(
 )
 names=("Supabase JWT" "Supabase secret key" "토스 라이브 시크릿" "토스 테스트 시크릿" "DB 접속 문자열")
 for i in "${!patterns[@]}"; do
-  found=$(git grep -I -n -E "${patterns[$i]}" $(git rev-list --all) 2>/dev/null | head -3 || true)
+  found=$(git grep -I -n -E "${patterns[$i]}" $(git rev-list --all) -- . "${SELF_EXCLUDE_GIT[@]}" 2>/dev/null | head -3 || true)
   if [[ -n "$found" ]]; then
     bad "${names[$i]} 형태의 값이 이력에 있습니다:"
     echo "$found" | sed 's/^/      /'
@@ -59,7 +65,7 @@ echo
 echo "4. 현재 작업 트리"
 worktree=$(grep -rIl -E 'eyJhbGciOiJIUzI1NiI|sk_(live|test)_[A-Za-z0-9]{12,}|sb_secret_' \
   --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git \
-  --exclude='*.example' --exclude='check-secrets.sh' . 2>/dev/null || true)
+  --exclude='*.example' "${SELF_EXCLUDE_GREP[@]}" . 2>/dev/null || true)
 if [[ -n "$worktree" ]]; then
   bad "비밀값 형태가 든 파일:"
   echo "$worktree" | sed 's/^/      /'

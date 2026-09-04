@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "check:bundle": "node scripts/check-bundle.mjs",
     "og": "node scripts/generate-og-image.mjs",
-    "check:secrets": "bash scripts/check-secrets.sh"
+    "check:secrets": "bash scripts/check-secrets.sh",
+    "check:env": "node scripts/check-env.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.3",
