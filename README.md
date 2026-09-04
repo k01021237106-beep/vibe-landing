@@ -31,6 +31,7 @@ Pretendard 웹폰트를 `public/fonts/`에 자동으로 만든다. 이 산출물
 | `npm run lint` | ESLint |
 | `npm run typecheck` | 타입 검사 |
 | `npm run check:layout` | 전 페이지 스크린샷 + 레이아웃·접근성 검사 |
+| `npm run check:bundle` | 클라이언트 번들에 서버 전용 값이 섞였는지 검사 |
 | `npm test` | 단위 테스트 (연락처 정규화, 접근권 서명) |
 | `npm run test:db` | RLS·가입 트리거·무료 퍼널 검증 (`SUPABASE_DB_URL` 필요) |
 
@@ -144,6 +145,11 @@ lib/
   phone.ts            연락처 정규화·신청 내용 검사 (순수 함수)
   free-access.ts      무료 1강 접근권 서명·검증
   free-lesson.ts      무료 1강 영상 주소 (자격 확인 후에만 호출)
+  lessons/
+    access.ts         시청 접근 판단 — 수강권 확인 전에 영상 주소를 읽지 않는다
+    enrollment-query.ts  수강권 조회 (미들웨어·페이지가 함께 쓴다)
+  admin/
+    guard.ts          관리자 판별 (profiles.role)
   payments/
     confirm.ts        결제 승인 판단 — 금액 위변조를 막는 핵심
     orders.ts         주문 저장소 (가격을 DB에서 읽는다)
@@ -202,3 +208,7 @@ docs/                 브리프·계획·Supabase 설정·스크린샷
 - [ ] 법적 고지 3종의 시행일을 실제 날짜로 교체
 - [ ] 강사 소개를 실제 이력·사진으로 교체 (`components/landing/instructor.tsx`)
 - [ ] 개인정보처리방침의 처리위탁 표가 실제 사용 업체와 맞는지 확인
+- [ ] **Vimeo 영상을 비공개 + 도메인 제한으로 설정** — iframe 주소는 페이지를
+      볼 수 있는 사람에게 어차피 보인다. 우리 도메인 밖에서 재생되지 않게 막아야
+      실제 보호가 된다.
+- [ ] 운영자 계정을 관리자로 승격 (`update profiles set role='admin' where id=…`)
