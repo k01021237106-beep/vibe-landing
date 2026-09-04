@@ -3,6 +3,33 @@
 > ⚠️ **환경변수는 이 저장소에 넣지 않는다.** Vercel 대시보드에서 입력한다.
 > 저장소에 넣으면 커밋되고, 한 번 커밋된 비밀값은 지워도 이력에 남는다.
 
+## 현재 상태 (2026-09-04 확인)
+
+| 항목 | 상태 |
+|---|---|
+| Vercel 프로젝트 | `melavyn/vibe-landing` — **이미 GitHub 저장소에 연결됨** |
+| 자동 배포 | 푸시할 때마다 동작 중 |
+| 운영 배포 | 아직 옛날 정적 페이지 (`main` 브랜치) |
+| 최근 빌드 | **실패** — 환경변수가 없어서 |
+| 배포 보호 | **켜짐** (Vercel 로그인해야 볼 수 있음) |
+
+빌드 실패 메시지는 이렇게 나온다. 우리가 의도한 것이다 —
+값이 없으면 화면이 이상하게 동작하는 대신 빌드 단계에서 바로 멈춘다.
+
+```
+✓ Compiled successfully in 14.5s
+Error: 환경변수 NEXT_PUBLIC_SUPABASE_URL이(가) 없습니다.
+```
+
+컴파일·타입·린트는 통과했고 환경변수에서만 멈췄다.
+아래 1번을 채우면 다음 배포부터 성공한다.
+
+### 바로 가는 링크
+
+- 환경변수: <https://vercel.com/melavyn/vibe-landing/settings/environment-variables>
+- 배포 보호: <https://vercel.com/melavyn/vibe-landing/settings/deployment-protection>
+- 배포 목록: <https://vercel.com/melavyn/vibe-landing/deployments>
+
 ---
 
 ## 1. Vercel에 넣을 환경변수
@@ -110,9 +137,47 @@ update public.profiles set role = 'admin' where email = '운영자@example.com';
 
 ---
 
-## 4. 배포
+## 4. 배포 보호 — 오픈 전 반드시 확인
+
+지금은 **Vercel Authentication이 켜져 있다.** Vercel 계정으로 로그인해야 사이트가 보인다.
+
+준비하는 동안은 이게 안전하다 — 설정이 덜 된 사이트가 검색에 잡히거나
+남에게 보이지 않는다. 하지만 **판매를 시작하기 전에는 반드시 꺼야 한다.**
+
+켜진 채로 두면:
+
+- 손님이 사이트에 들어올 수 없다
+- 카카오 로그인이 돌아올 곳에서 막힌다
+- **토스 결제가 끝난 뒤 돌아오는 주소에서 막힌다** — 돈만 빠져나간 상태가 된다
+- 검색엔진이 색인하지 못한다
+
+끄는 곳: Settings → Deployment Protection → Vercel Authentication → Disabled
+
+> 순서가 중요하다. 환경변수 → 카카오·Vimeo 설정 → 결제 테스트까지
+> 보호를 켠 채로 마치고, 마지막에 끈다.
+
+---
+
+## 5. 배포
 
 Vercel이 GitHub 저장소를 연결하면 푸시할 때마다 자동으로 배포한다.
+
+### 미리보기와 운영
+
+| 브랜치 | 배포 | 주소 |
+|---|---|---|
+| `claude/phase-1-basic-setup-1o3ztm` (작업 브랜치) | 미리보기 | `vibe-landing-git-claude-...vercel.app` |
+| `main` (운영 브랜치) | **운영** | `vibe-landing.vercel.app` |
+
+지금까지의 작업은 전부 작업 브랜치에 있고, 운영 주소에는 아직 옛날 페이지가 떠 있다.
+
+권하는 순서:
+
+1. 환경변수를 넣는다 → 작업 브랜치 미리보기가 성공하는지 본다
+2. 미리보기에서 카카오 로그인·결제 테스트까지 마친다
+3. 다 되면 `main`에 병합한다 → 그때 운영 주소가 바뀐다
+
+미리보기에서 먼저 확인하면, 잘못돼도 운영 주소는 그대로다.
 
 배포 후 확인할 것:
 
@@ -125,7 +190,7 @@ npx lighthouse https://<배포주소>/ --only-categories=performance,accessibili
 
 ---
 
-## 5. 결제 테스트
+## 6. 결제 테스트
 
 **테스트 키로 먼저 한다.** 실제 돈이 오가지 않는다.
 
@@ -160,7 +225,7 @@ order by o.created_at desc limit 5;
 
 ---
 
-## 6. 판매 시작 전 (법적 준비)
+## 7. 판매 시작 전 (법적 준비)
 
 코드와 무관하지만 이것들이 안 되면 판매를 시작하면 안 된다.
 
@@ -172,6 +237,7 @@ order by o.created_at desc limit 5;
 - [ ] `contact` 값(카카오톡 채널 주소, 이메일) 채우기
 - [ ] 강사 소개를 실제 이력·사진으로 교체 (`components/landing/instructor.tsx`)
 - [ ] 개인정보처리방침의 처리위탁 표가 실제 사용 업체와 맞는지 확인
+- [ ] **Vercel Authentication 끄기** (4번 참고) — 켜져 있으면 손님이 못 들어온다
 
 ---
 
