@@ -131,29 +131,114 @@ supabase.from("leads").insert(row)
 
 코드는 준비돼 있다(`components/auth/login-form.tsx`). **아래 설정이 끝나야 실제로 동작한다.**
 
-1. **Kakao Developers**(<https://developers.kakao.com>)에서 앱 생성
-2. 카카오 로그인 활성화, 동의 항목에서 **닉네임**·**프로필 사진**·**이메일** 설정
-   - 이메일은 검수 대상이다. 승인 전에는 이메일이 비어 올 수 있다 —
-     `profiles` 생성 트리거가 이 경우도 처리한다.
-3. **Redirect URI** 등록
-   ```
-   https://<프로젝트ref>.supabase.co/auth/v1/callback
-   ```
-4. **Supabase 대시보드 → Authentication → Providers → Kakao**
-   - REST API 키 → `Client ID`
-   - Client Secret (보안 → Client Secret 생성) → `Client Secret`
-5. **Authentication → URL Configuration**
-   - Site URL: 배포 주소
-   - Redirect URLs에 추가:
-     ```
-     http://localhost:3000/auth/callback
-     https://<배포주소>/auth/callback
-     ```
+> 아래 절차는 Supabase 공식 문서(<https://supabase.com/docs/guides/auth/social-login/auth-kakao>)를
+> 확인해 적었다. 카카오 쪽 화면 이름은 바뀔 수 있다.
 
-이메일 로그인은 폴백이다. 별도 설정 없이 동작하지만 기본 메일 발송에는 한도가 있다.
+### 1. Kakao Developers에서 앱 만들기
+
+<https://developers.kakao.com> → **내 애플리케이션** → **애플리케이션 추가하기**
+(앱 이름·회사명·카테고리를 채운다)
+
+### 2. REST API 키와 Client Secret 챙기기
+
+**앱 설정 → 앱 키**에 있는 **REST API 키** → Supabase의 `Client ID`가 된다.
+
+같은 화면에서 **보안** 항목의 **Client Secret**을 만들고 **활성화**한다.
+→ Supabase의 `Client Secret`이 된다. **활성화를 켜지 않으면 로그인이 실패한다.**
+
+### 3. Redirect URI 등록 — 우리 사이트 주소가 아니다
+
+**앱 설정 → 앱 키 → REST API 키 → 카카오 로그인 Redirect URI**에 넣는다.
+
+```
+https://jizcftnuciyfalymbrlu.supabase.co/auth/v1/callback
+```
+
+⚠️ 여기에 우리 사이트 주소(`.../auth/callback`)를 넣는 실수가 가장 흔하다.
+카카오는 **Supabase**로 돌려보내고, Supabase가 다시 **우리 사이트**로 보낸다. 두 단계다.
+
+### 4. 카카오 로그인 켜기 + 동의 항목
+
+**제품 설정 → 카카오 로그인 → 일반**에서 **활성화 설정을 ON**으로.
+
+**제품 설정 → 카카오 로그인 → 동의 항목**에서:
+
+| 항목 | 설정 | 쓰이는 곳 |
+|---|---|---|
+| 닉네임 (`profile_nickname`) | 필수 동의 | `profiles.display_name` |
+| 프로필 사진 (`profile_image`) | 선택 동의 | `profiles.avatar_url` |
+| 카카오계정(이메일) (`account_email`) | **건드리지 않아도 된다** | 표시용 예비값일 뿐 |
+
+⚠️ **이메일은 비즈 앱으로 전환해야만 요청할 수 있다.**
+그래서 처음에는 이메일 없이 간다. 대신 5번의 스위치를 반드시 켜야 한다.
+
+이메일이 없어도 우리 코드는 멀쩡하다 — `profiles.email`은 널을 허용하고,
+화면에서는 `display_name ?? email ?? "-"` 순서로 표시하므로 닉네임이 그 자리를 채운다.
+
+### 5. Supabase에 키 넣기 ← **여기가 가장 잘 막히는 곳**
+
+**Authentication → Sign In / Providers → Kakao**
+
+- **Kakao Enabled** 켜기
+- `Client ID` ← REST API 키
+- `Client Secret` ← 카카오에서 만든 Client Secret
+- ⚠️ **`Allow users without an email` 를 켠다.**
+  4번에서 이메일 동의를 받지 않았으므로, 이걸 켜지 않으면
+  카카오 화면까지 잘 갔다가 돌아오는 길에 로그인이 실패한다.
+  화면에는 그냥 "로그인 실패"로만 보여서 원인을 찾기 어렵다.
+
+### 6. 돌아올 주소 등록
+
+**Authentication → URL Configuration**
+
+- **Site URL**
+  ```
+  https://vibe-landing-tau.vercel.app
+  ```
+- **Redirect URLs** — 아래를 전부 추가한다
+  ```
+  http://localhost:3000/auth/callback
+  https://vibe-landing-tau.vercel.app/auth/callback
+  https://vibe-landing-git-claude-phase-1-basic-setup-1o3ztm-melavyn.vercel.app/auth/callback
+  https://vibe-landing-*-melavyn.vercel.app/auth/callback
+  ```
+
+  네 번째 줄이 필요한 이유 — Vercel은 배포할 때마다 새 주소를 만든다.
+  로그인 폼이 `window.location.origin`으로 돌아올 곳을 정하므로,
+  미리보기 주소에서 시험하면 그 주소가 목록에 있어야 한다.
+  정식 도메인을 붙인 뒤에는 이 줄을 지워도 된다.
+
+### 7. 확인
+
+로그인을 한 번 해 본 뒤:
+
+```sql
+select p.id, p.email, p.display_name, p.role, i.provider
+from public.profiles p
+join auth.identities i on i.user_id = p.id;
+```
+
+`provider = 'kakao'` 행이 생기고 `display_name`에 닉네임이 들어 있으면 된 것이다.
+`email`이 비어 있는 것은 정상이다 (4번 참고).
+
+### 운영자를 관리자로 — 이메일이 없을 때
+
+`docs/DEPLOY.md`의 승격 SQL은 이메일로 사람을 찾는다.
+카카오로만 로그인했다면 이메일이 없으므로 **id로 찾는다**:
+
+```sql
+-- 먼저 누가 누구인지 본다
+select id, display_name, email, created_at from public.profiles order by created_at;
+-- 그 다음 id로 승격한다
+update public.profiles set role = 'admin' where id = '위에서 고른 id';
+```
+
+### 이메일 로그인 (폴백)
+
+별도 설정 없이 동작하지만 기본 메일 발송에는 한도가 있다.
 실제 운영에서는 Authentication → Emails에서 SMTP를 연결한다.
 
-카카오 심사가 늦어져도 이메일 로그인으로 결제·수강이 막히지 않는다.
+카카오 설정이 늦어져도 이메일 로그인으로 결제·수강이 막히지 않는다.
 
 ## 결제 함수
 
