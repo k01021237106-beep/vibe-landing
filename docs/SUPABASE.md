@@ -167,25 +167,59 @@ https://jizcftnuciyfalymbrlu.supabase.co/auth/v1/callback
 |---|---|---|
 | 닉네임 (`profile_nickname`) | 필수 동의 | `profiles.display_name` |
 | 프로필 사진 (`profile_image`) | 선택 동의 | `profiles.avatar_url` |
-| 카카오계정(이메일) (`account_email`) | **건드리지 않아도 된다** | 표시용 예비값일 뿐 |
+| 카카오계정(이메일) (`account_email`) | **반드시 설정해야 한다** | 표시용 예비값 |
 
-⚠️ **이메일은 비즈 앱으로 전환해야만 요청할 수 있다.**
-그래서 처음에는 이메일 없이 간다. 대신 5번의 스위치를 반드시 켜야 한다.
+#### ⛔ 이메일 동의항목을 켜지 않으면 로그인이 아예 안 된다 (KOE205)
 
-이메일이 없어도 우리 코드는 멀쩡하다 — `profiles.email`은 널을 허용하고,
-화면에서는 `display_name ?? email ?? "-"` 순서로 표시하므로 닉네임이 그 자리를 채운다.
+처음에 이 문서는 "이메일은 건드리지 않아도 된다"고 적었다. **틀렸다.**
+그대로 설정했더니 카카오가 **KOE205**를 돌려줬다.
 
-### 5. Supabase에 키 넣기 ← **여기가 가장 잘 막히는 곳**
+이유는 우리 코드가 아니라 **Supabase 쪽에 있다.**
+Supabase Auth는 카카오에 보낼 scope를 **코드에 박아 두고 항상 세 개를 요청한다**
+(`internal/api/provider/kakao.go`):
+
+```go
+oauthScopes := []string{
+	"account_email",
+	"profile_image",
+	"profile_nickname",
+}
+
+if scopes != "" {
+	oauthScopes = append(oauthScopes, strings.Split(scopes, ",")...)
+}
+```
+
+우리가 `signInWithOAuth`에 넘기는 scope는 **덧붙기만 하고 지우지 못한다.**
+즉 `account_email`을 빼는 방법이 우리 코드에도, Supabase 대시보드에도 없다.
+카카오 앱에 그 동의항목이 없으면 매번 KOE205다.
+
+**`Allow users without an email`은 이 문제를 풀지 못한다.**
+그 스위치(`EmailOptional`)는 "이메일 **없는 사용자를 만들어도 되는가**"를 정할 뿐,
+"카카오에 이메일을 **요청할 것인가**"와는 다른 값이다.
+카카오 동의 화면에 닿기도 전에 막히므로 그 스위치까지 갈 일이 없다.
+
+→ **카카오 앱을 비즈 앱으로 전환해야 한다.**
+`account_email` 동의항목은 비즈 앱에서만 열린다.
+**앱 설정 → 앱 → 비즈니스 정보**를 채우면 전환할 수 있다.
+(전환에 필요한 서류·요건은 카카오 화면에서 확인한다)
+
+전환이 끝나면 동의항목에서 **카카오계정(이메일)**을 켠다.
+필수 동의로 두면 이메일이 항상 들어오고, 선택 동의로 두면 비어 올 수 있다.
+둘 다 우리 코드는 견딘다 — `profiles.email`은 널을 허용하고,
+화면은 `display_name ?? email ?? "-"` 순서로 표시하므로 닉네임이 그 자리를 채운다.
+**선택 동의로 두었다면** 5번의 `Allow users without an email`을 켠다.
+
+### 5. Supabase에 키 넣기
 
 **Authentication → Sign In / Providers → Kakao**
 
 - **Kakao Enabled** 켜기
 - `Client ID` ← REST API 키
 - `Client Secret` ← 카카오에서 만든 Client Secret
-- ⚠️ **`Allow users without an email` 를 켠다.**
-  4번에서 이메일 동의를 받지 않았으므로, 이걸 켜지 않으면
-  카카오 화면까지 잘 갔다가 돌아오는 길에 로그인이 실패한다.
-  화면에는 그냥 "로그인 실패"로만 보여서 원인을 찾기 어렵다.
+- **`Allow users without an email`** — 이메일을 **선택 동의**로 두었다면 켠다.
+  이메일을 주지 않은 손님도 가입되게 한다.
+  ⚠️ 이 스위치는 KOE205와 무관하다. 위 4번을 참고.
 
 ### 6. 돌아올 주소 등록
 
