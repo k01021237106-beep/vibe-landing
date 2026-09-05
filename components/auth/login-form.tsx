@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { loginErrorMessage } from "@/lib/auth/login-error";
 import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
@@ -65,10 +66,8 @@ export function LoginForm() {
     });
 
     if (error) {
-      setStatus({
-        kind: "error",
-        message: "메일을 보내지 못했습니다. 주소를 다시 확인해 주세요.",
-      });
+      // 원인마다 해야 할 일이 다르다. 그래서 다르게 말한다 (lib/auth/login-error.ts)
+      setStatus({ kind: "error", message: loginErrorMessage(error) });
       return;
     }
     setStatus({ kind: "sent", email });

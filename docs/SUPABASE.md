@@ -322,10 +322,42 @@ update public.profiles set role = 'admin' where id = '위에서 고른 id';
 
 ### 이메일 로그인 (폴백)
 
-별도 설정 없이 동작하지만 기본 메일 발송에는 한도가 있다.
-실제 운영에서는 Authentication → Emails에서 SMTP를 연결한다.
+별도 설정 없이 동작한다. 카카오 설정이 늦어져도 이메일 로그인으로
+결제·수강이 막히지 않는다.
 
-카카오 설정이 늦어져도 이메일 로그인으로 결제·수강이 막히지 않는다.
+#### ⛔ 판매 시작 전에 SMTP를 반드시 연결한다
+
+Supabase 기본 메일 발송기는 **써 보라고 주는 것**이지 운영용이 아니다.
+공식 문서 그대로:
+
+> The Supabase platform comes with a default email-sending service for you to try out.
+> The service has a rate limit of N emails per hour, and **availability is on a
+> best-effort basis. For production use, you should consider configuring a custom SMTP server.**
+
+**실제로 걸렸다 (2026-09-05).** 테스트 중 세 통을 보내고 나니 막혔다:
+
+```
+2026-09-05T09:00:21Z  POST /otp  429
+  error:      "429: email rate limit exceeded"
+  error_code: "over_email_send_rate_limit"
+```
+
+로그인 링크가 곧 로그인 수단인 사이트에서 이건 **판매 중단과 같다.**
+손님 열 명이 같은 시간대에 로그인하려 하면 뒤쪽은 메일을 못 받는다.
+게다가 "best-effort"라 한도 안이어도 늦거나 안 올 수 있다.
+
+**연결하는 곳:** Authentication → Emails → SMTP Settings
+
+**고를 때 볼 것 — 국내 수신율이 가장 중요하다.**
+네이버·다음·한메일로 잘 들어가는지가 관건이다.
+아무리 싼 발송 서비스도 스팸함으로 가면 소용없다.
+연결한 뒤 **네이버·다음·지메일 각각으로 실제 발송 시험**을 한다.
+
+**보내는 주소는 우리 도메인이어야 한다.** 도메인을 사고 SPF·DKIM을 설정한다.
+공짜 주소(gmail.com 등)로 보내면 대부분 스팸으로 분류된다.
+
+> 도메인 구입 → SMTP 연결 → 수신율 시험. 이 순서는 시간이 걸린다.
+> 판매 시작 직전에 시작하면 늦는다.
 
 ## 결제 함수
 
