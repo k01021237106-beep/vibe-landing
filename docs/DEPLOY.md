@@ -100,8 +100,22 @@ Vercel → 프로젝트 → **Settings → Environment Variables**
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 이미 알고 있음 (아래 참고) | 브라우저로 나감 | Production + Preview |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` | **서버 전용** | Production + Preview |
 | `LEAD_ACCESS_SECRET` | 직접 생성 (아래 명령) | **서버 전용** | Production + Preview |
-| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 토스 개발자센터 → API 키 → Client Key | 브라우저로 나감 | Production + Preview |
-| `TOSS_SECRET_KEY` | 토스 개발자센터 → API 키 → Secret Key | **서버 전용** | Production + Preview |
+| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 토스 개발자센터 → **결제위젯** 연동 키 → 테스트 클라이언트 키 (`test_gck_`) | 브라우저로 나감 | Production + Preview |
+| `TOSS_SECRET_KEY` | 토스 개발자센터 → **결제위젯** 연동 키 → 테스트 시크릿 키 (`test_gsk_`) | **서버 전용** | Production + Preview |
+
+> ⚠️ **`g`가 붙은 키를 받아야 한다.** 토스 키는 연동 방식마다 짝이 다르다:
+>
+> | 연동 방식 | 클라이언트 | 시크릿 |
+> |---|---|---|
+> | 결제창(일반) | `test_ck_` | `test_sk_` |
+> | **결제위젯 ← 우리** | **`test_gck_`** | **`test_gsk_`** |
+>
+> 우리 코드는 `loadTossPayments()` → `toss.widgets()`로 **결제위젯**을 쓴다
+> (`components/checkout/payment-widget.tsx`).
+> `test_gck_` 옆에 `test_sk_`를 넣으면 **결제창은 열리는데 승인에서 인증 실패**한다.
+> 화면만 봐서는 원인을 알 수 없는 종류다.
+>
+> `npm run check:env`가 이 짝까지 검사한다. 넣은 뒤 꼭 한 번 돌린다.
 
 변수 6개 × 환경 2개 = **저장 12번**. 다 넣으면 `vercel env ls`에 12줄이 보인다.
 

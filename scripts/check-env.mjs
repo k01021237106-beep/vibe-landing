@@ -17,6 +17,9 @@
  */
 import { readFile } from "node:fs/promises";
 
+// 토스 키 규칙은 한 곳에만 둔다. 테스트도 같은 파일을 쓴다 (lib/payments/toss-keys.test.ts)
+import { checkTossKeyPair, checkTossKeyRole } from "../lib/payments/toss-keys.mjs";
+
 const ENV_FILE = process.env.ENV_FILE ?? ".env.local";
 
 /** 값을 그대로 보여 주지 않고 형태만 알려 준다 */
@@ -74,25 +77,14 @@ const checks = [
     required: true,
     public: true,
     what: "토스 결제창 키",
-    validate: (v) =>
-      /^(test|live)_(ck|gck)_/.test(v)
-        ? null
-        : "test_ck_ 또는 live_ck_ 로 시작해야 합니다",
+    validate: (v) => checkTossKeyRole(v, "client"),
   },
   {
     name: "TOSS_SECRET_KEY",
     required: true,
     public: false,
     what: "토스 결제 승인 키",
-    validate: (v) => {
-      if (/^(test|live)_(ck|gck)_/.test(v)) {
-        return "결제창 키(Client Key)를 넣으셨습니다. Secret Key가 필요합니다";
-      }
-      if (!/^(test|live)_(sk|gsk)_/.test(v)) {
-        return "test_sk_ 또는 live_sk_ 로 시작해야 합니다";
-      }
-      return null;
-    },
+    validate: (v) => checkTossKeyRole(v, "secret"),
   },
   {
     name: "NEXT_PUBLIC_SITE_URL",
@@ -191,21 +183,21 @@ for (const check of checks.filter((c) => !c.public)) {
   }
 }
 
-// 테스트 키와 라이브 키를 섞으면 승인이 실패한다.
+/*
+ * 두 토스 키가 서로 맞는 짝인지 본다.
+ *
+ * 모드(test/live)만 보는 것으로는 부족하다. 연동 방식도 맞아야 한다 —
+ * 결제위젯은 gck ↔ gsk, 결제창(일반)은 ck ↔ sk 다.
+ * 어긋나면 결제창은 열리는데 승인에서 인증 실패하고,
+ * 화면만 봐서는 원인을 알 수 없다. (lib/payments/toss-keys.mjs)
+ */
 const clientKey = env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? "";
 const secretKey = env.TOSS_SECRET_KEY ?? "";
 if (clientKey && secretKey) {
-  const clientMode = clientKey.startsWith("live_") ? "live" : "test";
-  const secretMode = secretKey.startsWith("live_") ? "live" : "test";
   console.log("\n토스 키 조합");
-  if (clientMode !== secretMode) {
-    fail(`결제창 키는 ${clientMode}, 승인 키는 ${secretMode}입니다. 같은 쪽으로 맞추세요`);
-  } else {
-    console.log(`  ✓ 둘 다 ${clientMode} 키`);
-    if (clientMode === "live") {
-      console.log("  ⚠️ 라이브 키입니다. 실제 돈이 오갑니다.");
-    }
-  }
+  const { problems, notes } = checkTossKeyPair({ clientKey, secretKey });
+  for (const note of notes) console.log(`  ✓ ${note}`);
+  for (const problem of problems) fail(problem);
 }
 
 console.log();
