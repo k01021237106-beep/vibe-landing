@@ -104,6 +104,14 @@ const checks = [
         ? null
         : "https://example.com 형태여야 합니다 (끝에 / 없이)",
   },
+  {
+    name: "NEXT_PUBLIC_KAKAO_LOGIN_ENABLED",
+    required: false,
+    public: true,
+    what: "카카오 로그인 버튼 표시 (비즈 앱 전환 후 1로)",
+    validate: (v) =>
+      v === "1" ? null : "1만 켜짐으로 인정합니다. 끄려면 변수를 지우세요",
+  },
 ];
 
 /** .env 파일을 읽어 온다. 이미 process.env에 있으면 그쪽을 우선한다. */

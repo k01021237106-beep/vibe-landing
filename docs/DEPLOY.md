@@ -105,8 +105,20 @@ Vercel → 프로젝트 → **Settings → Environment Variables**
 
 변수 6개 × 환경 2개 = **저장 12번**. 다 넣으면 `vercel env ls`에 12줄이 보인다.
 
-`NEXT_PUBLIC_SITE_URL`은 넣지 않아도 된다. Vercel이 `VERCEL_PROJECT_PRODUCTION_URL`을
-자동으로 넣어 주고 코드가 그것을 받는다. 나중에 직접 산 도메인을 쓰게 되면 그때 넣는다.
+### 나중에 넣는 것
+
+| 이름 | 언제 넣나 |
+|---|---|
+| `NEXT_PUBLIC_SITE_URL` | 직접 산 도메인을 쓰게 될 때. 그전에는 Vercel이 `VERCEL_PROJECT_PRODUCTION_URL`을 자동으로 넣어 주고 코드가 그것을 받는다 |
+| `NEXT_PUBLIC_KAKAO_LOGIN_ENABLED` | 카카오 **비즈 앱 전환**이 끝나 로그인이 실제로 될 때. 값은 `1` |
+
+`NEXT_PUBLIC_KAKAO_LOGIN_ENABLED`가 없으면 로그인 화면에 **카카오 버튼이 나오지 않고**
+이메일 로그인만 보인다. 일부러 그렇게 했다 —
+비즈 앱 전환 전에는 카카오 버튼을 눌러도 KOE205로 막히는데,
+오류가 나는 버튼은 없느니만 못하다. (까닭은 `docs/SUPABASE.md`)
+
+전환이 끝나면 이 변수를 Preview·Production에 각각 `1`로 넣고 재배포하면 된다.
+코드는 고칠 것이 없다.
 
 ### 이미 알고 있는 값
 

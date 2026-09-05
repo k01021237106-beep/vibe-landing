@@ -7,7 +7,9 @@ import { getCurrentUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "로그인",
-  description: "카카오로 간편하게 로그인하고 내 강의실로 들어가세요.",
+  // 카카오 버튼은 상황에 따라 숨겨진다(NEXT_PUBLIC_KAKAO_LOGIN_ENABLED).
+  // 설명은 어느 쪽이든 맞는 문장으로 둔다.
+  description: "간편하게 로그인하고 내 강의실로 들어가세요.",
 };
 
 export default async function LoginPage() {

@@ -28,4 +28,19 @@ export const publicEnv = {
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   ),
+
+  /**
+   * 카카오 로그인 버튼을 보일지.
+   *
+   * **기본값은 꺼짐이다.** 값을 넣지 않으면 버튼이 나오지 않는다.
+   * 되는 줄 알고 켜 두는 것보다, 안 되는 줄 알고 꺼 두는 쪽이 안전하기 때문이다 —
+   * 눌렀을 때 오류가 나는 버튼은 없느니만 못하다.
+   *
+   * 왜 이 스위치가 필요한가 —
+   * Supabase Auth는 카카오에 `account_email` scope를 **항상** 요청한다
+   * (코드에 박혀 있고 우리 쪽에서 뺄 수 없다. docs/SUPABASE.md 참고).
+   * 카카오 앱이 비즈 앱이 아니면 그 동의항목을 열 수 없어 매번 KOE205로 막힌다.
+   * 비즈 앱 전환이 끝나면 이 값을 1로 바꾼다. 코드는 고칠 것이 없다.
+   */
+  kakaoLoginEnabled: process.env.NEXT_PUBLIC_KAKAO_LOGIN_ENABLED === "1",
 } as const;
