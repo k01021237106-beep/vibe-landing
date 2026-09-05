@@ -364,6 +364,47 @@ Supabase 기본 메일 발송기는 **써 보라고 주는 것**이지 운영용
 `complete_paid_order`와 `refund_order`는 **`security definer`이고 클라이언트에서 부를 수 없다.**
 `anon`·`authenticated`의 실행 권한을 회수했고, 보안 어드바이저 목록에도 나타나지 않는다.
 
+### ⛔ `revoke ... from public`은 service_role의 권한까지 가져간다
+
+Phase 5에서 이렇게 막았다:
+
+```sql
+revoke all on function public.complete_paid_order(...) from public, anon, authenticated;
+```
+
+의도는 "브라우저에서 오는 역할에서 회수"였고 그건 맞다.
+그런데 **`public`에서 회수하면 기본으로 딸려 있던 실행 권한이 통째로 사라진다.**
+그 안에 `service_role`도 들어 있었고, 다시 부여하지 않았다.
+
+첫 실결제 테스트에서 이렇게 드러났다 (2026-09-05):
+
+```
+POST | 403 | .../rest/v1/rpc/complete_paid_order
+permission denied for function complete_paid_order
+```
+
+토스 승인은 났는데 주문은 `pending`에 머물고 수강권이 생기지 않았다.
+실제 손님이었다면 "돈은 냈는데 강의를 못 보는" 상태다.
+
+**SQL 테스트 8개는 전부 통과하고 있었다.** `supabase/tests/payments.sql`은
+`postgres` 권한으로 돌기 때문이다. **함수 로직은 맞았고 부를 권한이 없었을 뿐이다.**
+권한은 실제 호출 경로로 불러 봐야 드러난다.
+
+→ `20260905130000_grant_payment_functions_to_service_role.sql`로 되돌렸다.
+
+지금 상태를 확인하는 질의:
+
+```sql
+select p.proname,
+       has_function_privilege('service_role', p.oid, 'EXECUTE')  as 서버_호출가능,
+       has_function_privilege('anon', p.oid, 'EXECUTE')          as anon_호출가능,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') as 로그인사용자_호출가능
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname in ('complete_paid_order', 'refund_order');
+```
+
+**서버만 `true`여야 한다.** 나머지 둘이 `true`면 브라우저에서 결제를 임의로 완료할 수 있다.
+
 ### 왜 데이터베이스 함수인가
 
 주문을 '결제됨'으로 바꾸는 일과 수강권을 만드는 일은 **함께 성공하거나 함께 실패**해야 한다.

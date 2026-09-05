@@ -28,10 +28,12 @@ const 정상주문: PendingOrder = {
 
 function 가짜저장소(order: PendingOrder | null = 정상주문): OrderRepository & {
   complete: ReturnType<typeof vi.fn>;
+  recordPaymentKey: ReturnType<typeof vi.fn>;
 } {
   return {
     findByOrderCode: vi.fn(async () => order),
     complete: vi.fn(async () => ({ orderId: "order-uuid-1", enrollmentId: "enroll-uuid-1" })),
+    recordPaymentKey: vi.fn(async () => {}),
   };
 }
 
@@ -188,5 +190,80 @@ describe("결제 실패", () => {
 
     expect(result.ok).toBe(false);
     expect(orders.complete).not.toHaveBeenCalled();
+  });
+});
+
+/*
+ * 2026-09-05 첫 실결제 테스트에서 실제로 난 상황이다.
+ * 토스 승인은 났는데 complete_paid_order를 부를 권한이 없어 403이 났다.
+ * 주문은 pending에 머물고 수강권도 없었다 — 트랜잭션은 제대로 버텼다.
+ *
+ * 문제는 그다음이다. 그때 우리는 토스 결제 번호를 어디에도 남기지 않았다.
+ * 로그는 지워지고 사람은 잊는다. 실제 손님이었다면 수동 수습이 훨씬 어려웠다.
+ */
+describe("승인 후 완료 처리가 실패했을 때", () => {
+  function 완료실패저장소() {
+    const orders = 가짜저장소();
+    orders.complete = vi.fn(async () => {
+      throw new Error("permission denied for function complete_paid_order");
+    });
+    return orders;
+  }
+
+  it("결제 번호를 주문에 남긴다", async () => {
+    const orders = 완료실패저장소();
+
+    const result = await confirmPayment(
+      { paymentKey: "pk_실제번호", orderCode: 정상주문.orderCode, claimedAmount: 99_000 },
+      { orders, toss: 가짜토스() },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(orders.recordPaymentKey).toHaveBeenCalledWith({
+      orderCode: 정상주문.orderCode,
+      paymentKey: "pk_실제번호",
+    });
+  });
+
+  it("손님에게는 결제가 되었다고 알린다", async () => {
+    const result = await confirmPayment(
+      { paymentKey: "pk_1", orderCode: 정상주문.orderCode, claimedAmount: 99_000 },
+      { orders: 완료실패저장소(), toss: 가짜토스() },
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain("결제는 완료되었지만");
+      // "결제가 안 됐다"고 말하면 손님이 다시 결제한다. 이중 결제가 된다.
+      expect(result.message).not.toContain("결제되지");
+    }
+  });
+
+  /* 수습을 위한 부가 작업이 손님에게 다른 오류를 보여 주면 안 된다. */
+  it("결제 번호 보존까지 실패해도 같은 안내를 준다", async () => {
+    const orders = 완료실패저장소();
+    orders.recordPaymentKey = vi.fn(async () => {
+      throw new Error("db down");
+    });
+
+    const result = await confirmPayment(
+      { paymentKey: "pk_1", orderCode: 정상주문.orderCode, claimedAmount: 99_000 },
+      { orders, toss: 가짜토스() },
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.message).toContain("결제는 완료되었지만");
+  });
+
+  /* 승인 자체가 실패한 경우에는 남길 결제도 없다. */
+  it("토스가 거절했으면 결제 번호를 남기지 않는다", async () => {
+    const orders = 가짜저장소();
+
+    await confirmPayment(
+      { paymentKey: "pk_1", orderCode: 정상주문.orderCode, claimedAmount: 99_000 },
+      { orders, toss: 가짜토스(false) },
+    );
+
+    expect(orders.recordPaymentKey).not.toHaveBeenCalled();
   });
 });

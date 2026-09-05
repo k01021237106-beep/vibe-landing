@@ -140,5 +140,19 @@ export function createOrderRepository(): OrderRepository {
         enrollmentId: row?.enrollment_id ?? null,
       };
     },
+
+    async recordPaymentKey({ orderCode, paymentKey }) {
+      /*
+       * 상태는 건드리지 않는다. 아직 pending인 주문에 결제 번호만 붙여 둔다.
+       * 여기서 status를 paid로 바꾸면 수강권 없이 '결제됨'이 되어
+       * 지금 상태보다 더 나쁜 거짓말이 된다.
+       */
+      const { error } = await admin
+        .from("orders")
+        .update({ payment_key: paymentKey })
+        .eq("order_code", orderCode);
+
+      if (error) throw error;
+    },
   };
 }

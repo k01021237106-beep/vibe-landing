@@ -39,6 +39,14 @@ export type OrderRepository = {
     method: string | null;
     raw: unknown;
   }): Promise<{ orderId: string; enrollmentId: string | null }>;
+  /**
+   * 승인은 났는데 완료 처리가 실패했을 때, 토스 결제 번호만이라도 주문에 남긴다.
+   *
+   * 이게 없으면 나중에 수동으로 수습할 때 토스 대시보드를 뒤져
+   * 어느 결제가 이 주문인지 사람이 맞춰야 한다.
+   * 주문 상태는 바꾸지 않는다 — 돈을 받았다고 표시하는 것은 완료 처리의 몫이다.
+   */
+  recordPaymentKey(input: { orderCode: string; paymentKey: string }): Promise<void>;
 };
 
 export type TossConfirmResult =
@@ -163,6 +171,19 @@ export async function confirmPayment(
      * 반드시 로그에 남긴다. 사용자에게는 결제가 되었다고 알리고 안내로 연결한다.
      */
     console.error("[payments] 승인은 됐으나 수강권 생성 실패", { orderCode, cause });
+
+    /*
+     * 결제 번호만이라도 주문에 남긴다. 로그는 지워지고 사람은 잊는다.
+     * 이 값이 주문에 붙어 있으면 나중에 수동 처리가 조회 한 번으로 끝난다.
+     *
+     * 여기서 또 실패해도 삼킨다 — 이미 실패를 알리는 중이고,
+     * 수습을 위한 부가 작업 때문에 손님에게 다른 오류를 보여 줄 이유가 없다.
+     */
+    try {
+      await deps.orders.recordPaymentKey({ orderCode, paymentKey });
+    } catch (saveCause) {
+      console.error("[payments] 결제 번호 보존까지 실패", { orderCode, saveCause });
+    }
     return {
       ok: false,
       reason: "server_error",
