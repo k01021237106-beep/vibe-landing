@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 /*
  * ⚠️ 이 파일에서는 `@/` 별칭을 쓰지 않는다. 상대 경로로 적는다.
@@ -9,9 +9,21 @@ import type { NextRequest } from "next/server";
  *     - __vc__ns__/0/middleware.js: @/lib/supabase/middleware
  * 빌드는 전부 성공한 뒤 출력물을 올리는 단계에서 실패하므로 알아채기 어렵다.
  */
+import { authCodeToRescue } from "./lib/auth/rescue-code";
 import { updateSession } from "./lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  /*
+   * 로그인 링크가 첫 화면으로 떨어졌으면 콜백으로 넘겨준다.
+   * 실제로 이렇게 실패했다 — 판단 근거와 경계는 lib/auth/rescue-code.ts에 있다.
+   */
+  const code = authCodeToRescue(request.nextUrl);
+  if (code) {
+    const callback = new URL("/auth/callback", request.url);
+    callback.searchParams.set("code", code);
+    return NextResponse.redirect(callback);
+  }
+
   return updateSession(request);
 }
 
