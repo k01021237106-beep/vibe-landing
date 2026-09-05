@@ -1,3 +1,5 @@
+import { parseVimeoRef, vimeoEmbedUrl } from "@/lib/lessons/vimeo";
+
 /**
  * 강의 영상 재생 자리.
  *
@@ -16,10 +18,14 @@ export function LessonPlayer({
   vimeoId: string | null;
   title: string;
 }) {
-  // 시드 데이터의 자리표시 값. 실제 ID로 바꾸기 전까지는 준비 중으로 보여 준다.
-  const isPlaceholder = !vimeoId || vimeoId.startsWith("TODO-");
+  /*
+   * 비공개 영상은 번호 말고 보안 문자열이 하나 더 필요하다.
+   * 저장된 값이 무엇이든(번호·주소 통째로) 여기서 푼다 (lib/lessons/vimeo.ts).
+   * 알아볼 수 없으면 깨진 화면 대신 '준비 중'을 보여 준다.
+   */
+  const ref = parseVimeoRef(vimeoId);
 
-  if (isPlaceholder) {
+  if (!ref) {
     return (
       <div className="flex aspect-video w-full items-center justify-center border-2 border-line bg-surface p-6">
         <div className="text-center">
@@ -35,7 +41,7 @@ export function LessonPlayer({
   return (
     <div className="aspect-video w-full overflow-hidden bg-ink">
       <iframe
-        src={`https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0`}
+        src={vimeoEmbedUrl(ref)}
         title={title}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
