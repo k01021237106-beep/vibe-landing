@@ -229,18 +229,56 @@ if scopes != "" {
   ```
   https://vibe-landing-tau.vercel.app
   ```
-- **Redirect URLs** — 아래를 전부 추가한다
+- **Redirect URLs** — 아래를 전부 추가한다. **끝의 `/**`를 빠뜨리면 안 된다.**
   ```
-  http://localhost:3000/auth/callback
-  https://vibe-landing-tau.vercel.app/auth/callback
-  https://vibe-landing-git-claude-phase-1-basic-setup-1o3ztm-melavyn.vercel.app/auth/callback
-  https://vibe-landing-*-melavyn.vercel.app/auth/callback
+  http://localhost:3000/**
+  https://vibe-landing-tau.vercel.app/**
+  https://vibe-landing-*-melavyn.vercel.app/**
   ```
 
-  네 번째 줄이 필요한 이유 — Vercel은 배포할 때마다 새 주소를 만든다.
-  로그인 폼이 `window.location.origin`으로 돌아올 곳을 정하므로,
-  미리보기 주소에서 시험하면 그 주소가 목록에 있어야 한다.
-  정식 도메인을 붙인 뒤에는 이 줄을 지워도 된다.
+#### ⛔ `/auth/callback`으로 끝나게 적으면 로그인이 안 된다
+
+처음에 이 문서는 `.../auth/callback`까지만 적으라고 했다. **틀렸다.**
+그대로 등록했더니 메일 링크를 눌러도 첫 화면(`/?code=...`)으로 떨어졌다.
+오류 화면도 없어서 원인을 찾기 어려웠다.
+
+이유는 **와일드카드 규칙**이다. Supabase 문서의 표를 그대로 옮기면:
+
+> `*` — 구분자가 아닌 문자들의 연속에 대응한다
+> `**` — 모든 문자의 연속에 대응한다
+> **URL의 구분자는 `.` 와 `/` 이다**
+>
+> `http://localhost:3000/*` 는 `/foo`·`/bar`에는 맞지만
+> `/foo/bar`나 `/foo/`(끝의 빗금)에는 **맞지 않는다**
+
+그리고 우리 로그인 폼은 돌아올 주소를 이렇게 만든다
+(`components/auth/login-form.tsx`):
+
+```ts
+`${window.location.origin}/auth/callback?next=${encodeURIComponent(path)}`
+```
+
+**뒤에 `?next=...`가 붙는다.** 등록한 값이 `.../auth/callback`으로 끝나면
+이 물음표 뒷부분 때문에 대응하지 않는다. 목록에 있는데도 거부된다.
+
+거부되면 Supabase는 **오류를 내지 않고 Site URL로 대신 보낸다.**
+그래서 첫 화면에 `?code=`만 남고 로그인이 끝나지 않는다.
+
+→ 끝을 `/**`로 열어 둔다. Supabase 문서가 Vercel 미리보기에 권하는 형태이기도 하다.
+
+#### 세 줄이 각각 하는 일
+
+| 줄 | 쓰임 |
+|---|---|
+| `http://localhost:3000/**` | 내 컴퓨터에서 개발할 때 |
+| `https://vibe-landing-tau.vercel.app/**` | 운영 주소 |
+| `https://vibe-landing-*-melavyn.vercel.app/**` | 미리보기 — Vercel은 배포할 때마다 새 주소를 만든다 |
+
+`*`는 `.`을 넘지 못하므로 `vibe-landing-*-melavyn.vercel.app`은
+`vibe-landing-git-…-melavyn.vercel.app` 같은 **한 단계 호스트 이름**에만 맞는다.
+남의 도메인으로 새어 나가지 않는다.
+
+정식 도메인을 붙인 뒤에는 미리보기 줄을 지워도 된다.
 
 ### 7. 카카오 버튼 켜기
 
