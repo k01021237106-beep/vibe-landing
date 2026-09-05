@@ -10,6 +10,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check:layout": "node scripts/check-layout.mjs",
+    "check:perf": "node scripts/check-perf.mjs",
+    "check:preview": "node scripts/check-preview-card.mjs",
     "test:db": "bash scripts/test-db.sh",
     "test": "vitest run",
     "test:watch": "vitest",
