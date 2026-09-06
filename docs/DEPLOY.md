@@ -372,11 +372,19 @@ order by o.created_at desc limit 5;
 | 타입 | 호스트 | 값 | 쓰는 곳 |
 |---|---|---|---|
 | A | `@` | `216.198.79.1` | Vercel |
-| CNAME | `www` | Vercel이 지정한 값 | Vercel |
+| CNAME | `www` | `0b8aacd4a422c9ce.vercel-dns-017.com` | Vercel |
 | TXT | `resend._domainkey.send` | DKIM 공개키 | Resend |
 | CNAME | `rsend.send` | `rsend-apne1.forge.rmta.net` | Resend |
 | CNAME | `send.send` | `send.forge.rmta.net` | Resend |
 | TXT | `_dmarc` | `v=DMARC1; p=none;` | 메일 전반 |
+
+**대표 주소는 `firstdeploy.kr`이다.** `www`는 308로 이 주소에 넘겨준다.
+Vercel이 `www`를 추가할 때 반대 방향을 기본값으로 잡으므로 확인이 필요하다.
+방향을 바꿀 때는 **먼저 대표가 될 쪽의 리디렉션을 해제하고, 그다음 반대쪽에 건다.**
+거꾸로 하면 서로를 가리켜 무한 반복이 되고 사이트가 열리지 않는다.
+
+앞으로 넣을 값이 전부 이 주소 기준이다 — `NEXT_PUBLIC_SITE_URL`,
+Supabase Site URL·Redirect URLs, `sitemap.xml`의 canonical, 공유 카드의 `og:url`.
 
 **메일은 `send.firstdeploy.kr` 하위로 몰아 두었다.** 발송 주소가
 `hello@send.firstdeploy.kr`이 되는 대신, 뿌리 도메인의 TXT 자리가 비어 있다.

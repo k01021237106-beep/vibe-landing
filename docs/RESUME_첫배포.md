@@ -1,6 +1,6 @@
 # 이어서 하기 — 현재 상태와 다음 단계
 
-**마지막 갱신**: 2026-09-06
+**마지막 갱신**: 2026-09-07
 **작업 브랜치**: `claude/phase-1-basic-setup-1o3ztm`
 
 > 이 문서 하나만 읽으면 어디까지 왔고 무엇부터 하면 되는지 알 수 있게 적는다.
@@ -10,13 +10,13 @@
 
 ## 한 줄 요약
 
-도메인(`firstdeploy.kr`)을 사서 **메일 발송용 DNS와 웹 DNS를 모두 붙였다.**
-남은 것은 `www` 레코드 하나, 그리고 **Supabase에 SMTP를 연결하고 수신 시험**을 하는 것이다.
+도메인(`firstdeploy.kr`)을 사서 **웹과 메일 DNS를 모두 붙였고, 도메인 작업은 끝났다.**
+남은 것은 **Supabase에 SMTP를 연결하고 수신 시험**을 하는 것이다.
 사이트 공개(`main` 병합)는 아직 하지 않았다 — 사장님 결정이 필요하다.
 
 ---
 
-## 1. 오늘(2026-09-06) 완료한 것
+## 1. 여기까지 완료한 것
 
 | 항목 | 상태 | 확인 방법 |
 |---|---|---|
@@ -25,6 +25,8 @@
 | Resend 인증 | ✅ **Verified** | Resend → Domains 화면 초록색 |
 | 가비아 DNS 레코드 5개 저장 | ✅ | 아래 표 · 공개 DNS로 검증함 |
 | Vercel 도메인 연결 | ✅ **Valid Configuration** | Vercel → Settings → Domains |
+| 대표 주소(canonical) 확정 | ✅ `firstdeploy.kr` | 아래 '대표 주소' 참고 |
+| HTTPS·리디렉션 실제 응답 | ✅ 2026-09-07 확인 | 아래 '대표 주소' 참고 |
 
 ### 등록된 DNS 레코드 (2026-09-06 검증됨)
 
@@ -37,7 +39,7 @@
 | 3 | CNAME | `send.send` | `send.forge.rmta.net` | Resend |
 | 4 | TXT | `_dmarc` | `v=DMARC1; p=none;` | 메일 전반 |
 | 5 | A | `@` | `216.198.79.1` | Vercel |
-| 6 | CNAME | `www` | **← 아직 없음** | Vercel |
+| 6 | CNAME | `www` | `0b8aacd4a422c9ce.vercel-dns-017.com` | Vercel |
 
 CNAME 위임 너머까지 따라가 실제로 동작하는 것도 확인했다:
 
@@ -54,6 +56,35 @@ rsend.send.firstdeploy.kr
 발송 리전은 **`ap-northeast-1`(도쿄)**. 미국 리전보다 네이버·다음 수신율이
 유리한 자리다. 다만 이건 기대일 뿐이고, 실제 수신 시험 전까지 결론짓지 않는다.
 
+### 대표 주소(canonical)는 `firstdeploy.kr`
+
+```
+www.firstdeploy.kr  →  308 Permanent  →  https://firstdeploy.kr/
+firstdeploy.kr      →  바로 서비스 (리디렉션 없음)
+```
+
+Vercel이 `www`를 추가할 때 **반대 방향**(`firstdeploy.kr` → `www`)을 기본값으로 잡았고,
+2026-09-07에 되돌렸다. 사장님이 화면을 보고 잡아 주셔서 공개 전에 고칠 수 있었다.
+
+짧은 쪽을 대표로 둔 이유 — 손님이 어르신·중장년이다. 카카오톡으로 링크를 주고받고
+전화로 주소를 불러 주는 일이 생긴다. 입에서 나오는 이름이 대표여야 한다.
+`NEXT_PUBLIC_SITE_URL`, Supabase 등록 주소, `sitemap.xml`의 canonical,
+공유 카드의 `og:url` — 앞으로 넣을 값이 전부 이 주소 기준이다.
+
+> ⚠️ **방향을 바꿀 때는 순서가 있다.** 먼저 대표가 될 쪽의 리디렉션을 해제하고,
+> 그다음 반대쪽에 리디렉션을 건다. 거꾸로 하면 서로를 가리켜 무한 반복이 되고
+> 사이트가 열리지 않는다.
+
+브라우저 없이 확인한 방법 (프록시가 `curl`을 막으므로):
+
+```
+Vercel MCP의 web_fetch_vercel_url 로 https://www.firstdeploy.kr/ 를 부른다
+  → 308, location: https://firstdeploy.kr/     ← 방향 확인
+  → strict-transport-security 응답                ← 인증서 정상 확인
+https://firstdeploy.kr/robots.txt
+  → 404  ← Production이 아직 옛 정적 페이지라는 뜻. 고장이 아니다.
+```
+
 ### 언제든 다시 확인하는 명령
 
 ```bash
@@ -62,33 +93,12 @@ npm run check:dns
 
 ---
 
-## 2. 내일 할 일 — 순서대로
+## 2. 다음에 할 일 — 순서대로
 
-### ① `www` CNAME 추가 (5분)
+### ①② 도메인 연결 — ✅ 끝났다 (2026-09-07)
 
-지금 `www.firstdeploy.kr`은 **열리지 않는다.** 어르신 손님은 주소 앞에 `www`를
-붙이는 습관이 있어서 실제로 손님을 잃는 구멍이다.
-
-1. Vercel → 프로젝트 `vibe-landing` → **Settings → Domains**
-2. `www.firstdeploy.kr`이 목록에 없으면 추가하고 **Redirect to firstdeploy.kr** 선택
-3. Vercel이 보여 주는 CNAME 값을 가비아에 등록
-
-| 칸 | 값 |
-|---|---|
-| 타입 | `CNAME` |
-| 호스트 | `www` |
-| 값/위치 | Vercel이 준 값 (`…vercel-dns.com` 형태) |
-| TTL | `600` |
-
-### ② 브라우저로 `https://firstdeploy.kr` 열어 보기
-
-자물쇠(🔒)가 뜨면 성공이다.
-
-⚠️ **내용은 예전 정적 페이지가 나온다. 고장이 아니다.**
-Production이 아직 `main`(옛 페이지)이기 때문이고, ⑤에서 바뀐다.
-
-> 이 확인은 사장님만 할 수 있다. 작업 환경에서는 프록시가 HTTPS를 막아
-> 403이 오고, `openssl`로 보이는 인증서도 Vercel 것이 아니라 프록시 것이다.
+`www` CNAME 등록, 대표 주소 확정, HTTPS 인증서까지 실제 응답으로 확인했다.
+위 '대표 주소' 절 참고. 더 할 일이 없다.
 
 ### ③ Resend API 키 발급
 
@@ -118,6 +128,15 @@ Supabase → **Authentication → Emails → SMTP Settings** → **Enable Custom
 
 ⚠️ **Sender email의 도메인은 반드시 `send.firstdeploy.kr`.**
 `hello@firstdeploy.kr`로 적으면 Resend가 거부한다 — 인증한 것은 `send` 쪽이다.
+
+⚠️ **Username은 `resend` 다섯 글자.** 사장님 이메일이나 계정명이 아니다.
+Resend의 SMTP는 사용자명이 고정이다.
+
+⚠️ **Supabase의 Site URL과 Redirect URLs는 아직 건드리지 않는다.**
+지금 `firstdeploy.kr`로 바꾸면 로그인 링크가 옛 정적 페이지로 가서 로그인이 통째로 막힌다.
+그 작업은 `main` 병합(⑥⑦)과 **같이** 해야 한다.
+수신 시험은 미리보기 주소에서 한다 — 로그인 폼이 현재 주소를 보고 돌아올 곳을 정하므로
+그대로 동작한다.
 
 저장 후 **Authentication → Rate Limits** 에서 시간당 발송 수를 올린다.
 2026-09-05에 `429 over_email_send_rate_limit`으로 막혔던 값이다.
