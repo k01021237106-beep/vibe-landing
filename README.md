@@ -7,6 +7,7 @@
 유입 → 랜딩(설득) → 무료 1강 신청(경험) → 결제 → 내 강의실(수강)
 ```
 
+- **이어서 하기(현재 상태와 다음 단계)**: [`docs/RESUME_첫배포.md`](docs/RESUME_첫배포.md)
 - 프로젝트 브리프: [`docs/BRIEF_첫배포.md`](docs/BRIEF_첫배포.md)
 - 실행 계획: [`docs/plans/PLAN_첫배포.md`](docs/plans/PLAN_첫배포.md)
 
