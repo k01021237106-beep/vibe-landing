@@ -347,18 +347,70 @@ order by o.created_at desc limit 5;
 
 ### ⛔ 메일 발송(SMTP) — 이게 없으면 손님이 로그인을 못 한다
 
+- [x] **도메인 구입 + SPF·DKIM 설정** — 보내는 주소가 우리 도메인이어야 한다.
+      공짜 주소로 보내면 대부분 스팸함으로 간다.
+      → `firstdeploy.kr` (2026-09-06, 아래 '도메인과 DNS' 참고)
 - [ ] **자체 SMTP 연결** — Supabase 기본 발송기는 시험용이다.
       시간당 한도가 있고 "best-effort"라 늦거나 안 올 수 있다.
       **2026-09-05 테스트 중 세 통 만에 429로 막혔다.**
       로그인 링크가 곧 로그인 수단인 사이트에서 이건 판매 중단과 같다.
-- [ ] **도메인 구입 + SPF·DKIM 설정** — 보내는 주소가 우리 도메인이어야 한다.
-      공짜 주소로 보내면 대부분 스팸함으로 간다.
 - [ ] **네이버·다음·지메일 각각 수신 시험** — 국내 수신율이 관건이다.
 
 자세한 내용은 [`docs/SUPABASE.md`](SUPABASE.md)의 '이메일 로그인' 절.
 
 > 도메인 구입 → SMTP 연결 → 수신율 시험. 이 순서는 시간이 걸린다.
 > 판매 직전에 시작하면 늦는다.
+
+### 도메인과 DNS — `firstdeploy.kr`
+
+등록업체는 가비아, **네임서버도 가비아를 그대로 쓴다.** Vercel이나 Cloudflare로
+네임서버를 옮기면 아래 메일 레코드가 통째로 무효가 된다. 웹과 메일 레코드를
+한 화면에서 보기 위한 선택이기도 하다.
+
+2026-09-06 기준, 공개 DNS(8.8.8.8 / 1.1.1.1) 양쪽에서 확인한 값:
+
+| 타입 | 호스트 | 값 | 쓰는 곳 |
+|---|---|---|---|
+| A | `@` | `216.198.79.1` | Vercel |
+| CNAME | `www` | Vercel이 지정한 값 | Vercel |
+| TXT | `resend._domainkey.send` | DKIM 공개키 | Resend |
+| CNAME | `rsend.send` | `rsend-apne1.forge.rmta.net` | Resend |
+| CNAME | `send.send` | `send.forge.rmta.net` | Resend |
+| TXT | `_dmarc` | `v=DMARC1; p=none;` | 메일 전반 |
+
+**메일은 `send.firstdeploy.kr` 하위로 몰아 두었다.** 발송 주소가
+`hello@send.firstdeploy.kr`이 되는 대신, 뿌리 도메인의 TXT 자리가 비어 있다.
+나중에 `@firstdeploy.kr`로 메일을 **받으려고** 다른 업체를 붙일 때
+SPF를 새로 쓸 수 있다. SPF는 도메인당 한 줄만 유효해서, 두 업체가
+같은 자리를 다투면 조용히 깨진다.
+
+`_dmarc`만 뿌리에 있다. DMARC는 상위 도메인 것이 하위까지 덮으므로 이게 맞다.
+
+#### 레코드를 넣을 때 틀리는 곳
+
+- **가비아의 '호스트' 칸은 도메인을 뺀 앞부분만 받는다.**
+  `send.firstdeploy.kr`을 그대로 붙여넣으면 실제로는
+  `send.firstdeploy.kr.firstdeploy.kr`이 만들어진다.
+  오류도 안 나고 저장도 되는데 인증만 영원히 안 된다.
+  → 넣은 뒤 `<이름>.firstdeploy.kr.firstdeploy.kr`을 조회해 **없는지** 확인한다.
+- **Resend의 SPF는 TXT가 아니라 CNAME 2개다.** 문서와 블로그에 흔한
+  `v=spf1 include:amazonses.com ~all`을 손으로 넣으면 안 된다.
+  Resend가 CNAME으로 위임받아 자기 쪽에서 SPF와 반송 MX를 서비스한다.
+  화면에 나온 것만 넣는다.
+- **레코드가 '있는 것'과 '동작하는 것'은 다르다.** CNAME은 껍데기다.
+  위임 너머까지 따라가 확인한다:
+
+```bash
+# CNAME 너머에서 SPF와 반송 MX가 실제로 나오는지
+node -e "const d=require('node:dns').promises;const r=new d.Resolver();
+r.setServers(['8.8.8.8']);
+(async()=>{for(const h of ['send.send.firstdeploy.kr','rsend.send.firstdeploy.kr'])
+console.log(h,await r.resolveTxt(h),await r.resolveMx(h));})()"
+```
+
+> 발송 리전이 `apne1`(도쿄)로 잡혔다. 미국 리전보다 네이버·다음 수신율이
+> 유리한 자리다. 다만 이건 근거 있는 기대일 뿐이고, 실제 수신 시험 전까지
+> "잘 간다"고 말하지 않는다.
 
 ### 법적 준비
 
