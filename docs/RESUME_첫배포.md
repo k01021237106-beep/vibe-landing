@@ -10,8 +10,8 @@
 
 ## 한 줄 요약
 
-도메인(`firstdeploy.kr`)을 사서 **웹과 메일 DNS를 모두 붙였고, 도메인 작업은 끝났다.**
-남은 것은 **Supabase에 SMTP를 연결하고 수신 시험**을 하는 것이다.
+도메인(`firstdeploy.kr`)을 샀고, **우리 도메인으로 보낸 로그인 메일로 실제 로그인까지 됐다.**
+남은 것은 **로그인 메일을 한국어로 바꾸는 것**과 **네이버·다음 수신 시험**이다.
 사이트 공개(`main` 병합)는 아직 하지 않았다 — 사장님 결정이 필요하다.
 
 ---
@@ -27,6 +27,9 @@
 | Vercel 도메인 연결 | ✅ **Valid Configuration** | Vercel → Settings → Domains |
 | 대표 주소(canonical) 확정 | ✅ `firstdeploy.kr` | 아래 '대표 주소' 참고 |
 | HTTPS·리디렉션 실제 응답 | ✅ 2026-09-07 확인 | 아래 '대표 주소' 참고 |
+| Resend API 키 + Supabase SMTP | ✅ | Supabase → Authentication → Emails |
+| 지메일 수신 + 매직링크 로그인 | ✅ 2026-09-07 01:04 | 아래 '로그인 왕복' 참고 |
+| 네이버·다음 수신 | ⬜ 아직 | ⑤ 참고 |
 
 ### 등록된 DNS 레코드 (2026-09-06 검증됨)
 
@@ -100,57 +103,62 @@ npm run check:dns
 `www` CNAME 등록, 대표 주소 확정, HTTPS 인증서까지 실제 응답으로 확인했다.
 위 '대표 주소' 절 참고. 더 할 일이 없다.
 
-### ③ Resend API 키 발급
+### ③④ Resend API 키 + Supabase SMTP — ✅ 끝났다 (2026-09-07)
 
-Resend → 왼쪽 **API keys** → **Create API Key**
+현재 설정 (Supabase → Authentication → Emails → SMTP Settings):
 
-| 항목 | 선택 |
-|---|---|
-| Name | `supabase-auth` |
-| Permission | **Sending access** (Full access 아님) |
-| Domain | `send.firstdeploy.kr` |
-
-**키는 만든 직후 한 번만 보인다.** 창을 닫으면 다시 못 본다. 바로 ④로 간다.
-키 값은 사장님이 직접 붙여넣는다 — 대화에 붙여 넣지 않는다.
-
-### ④ Supabase SMTP 연결
-
-Supabase → **Authentication → Emails → SMTP Settings** → **Enable Custom SMTP**
-
-| 칸 | 넣을 값 |
+| 칸 | 값 |
 |---|---|
 | Sender email | `hello@send.firstdeploy.kr` |
 | Sender name | `첫배포` |
 | Host | `smtp.resend.com` |
-| Port | `465` (안 되면 `587`) |
-| Username | `resend` ← 이 글자 그대로 |
-| Password | ③에서 만든 API 키 |
+| Port | `465` |
+| Username | `resend` ← 계정명이 아니다. 이 다섯 글자 |
+| Password | Resend API 키 (`supabase-auth`, Sending access) |
 
-⚠️ **Sender email의 도메인은 반드시 `send.firstdeploy.kr`.**
-`hello@firstdeploy.kr`로 적으면 Resend가 거부한다 — 인증한 것은 `send` 쪽이다.
-
-⚠️ **Username은 `resend` 다섯 글자.** 사장님 이메일이나 계정명이 아니다.
-Resend의 SMTP는 사용자명이 고정이다.
-
-⚠️ **Supabase의 Site URL과 Redirect URLs는 아직 건드리지 않는다.**
+⚠️ **Supabase의 Site URL과 Redirect URLs는 아직 안 건드렸다.**
 지금 `firstdeploy.kr`로 바꾸면 로그인 링크가 옛 정적 페이지로 가서 로그인이 통째로 막힌다.
-그 작업은 `main` 병합(⑥⑦)과 **같이** 해야 한다.
-수신 시험은 미리보기 주소에서 한다 — 로그인 폼이 현재 주소를 보고 돌아올 곳을 정하므로
-그대로 동작한다.
+그 작업은 `main` 병합(⑦⑧)과 **같이** 해야 한다.
 
-저장 후 **Authentication → Rate Limits** 에서 시간당 발송 수를 올린다.
-2026-09-05에 `429 over_email_send_rate_limit`으로 막혔던 값이다.
-자체 SMTP를 붙였으므로 이제 올려도 된다.
+#### 로그인 왕복 — 우리 도메인 메일로 확인됨
 
-### ⑤ 수신 시험 — 여기서 진짜가 갈린다
+```
+last_sign_in_at   2026-09-07 01:04:13.651820+00
+세션 생성          2026-09-07 01:04:13.653025+00   차이 2밀리초
+```
 
-미리보기 주소의 `/login`에서 **네이버 · 다음 · 지메일** 세 곳으로 각각
-로그인 링크를 보낸다. (미리보기에서 한다. `main` 병합은 필요 없다.)
+시험 직전에 세션 0건·토큰 0건인 것을 확인하고 시작했으므로,
+이 세션은 **매직 링크가 새로 만든 것**이 맞다. 갱신이 아니다.
+
+> ⚠️ **로그인 시험은 반드시 세션 0건에서 시작한다.**
+> 살아 있는 세션이 있으면 교환이 실패해도 `/login`이 `/my`로 보내 버려
+> 성공처럼 보인다. 2026-09-07에 두 번 그렇게 속았다 (Notes 43 참고).
+>
+> ```sql
+> select count(*) from auth.sessions;   -- 0이어야 한다
+> ```
+
+### ⑤ 로그인 메일을 한국어로
+
+지금은 **Supabase 기본 영문 템플릿**이다. 본문에 "Sign in"만 있다.
+코딩을 모르는 어르신 손님에게 영문 메일은 그 자체가 장벽이다.
+Supabase → Authentication → Emails → **Magic Link** 템플릿을 고친다.
+
+### ⑥ 네이버 · 다음 수신 시험
+
+미리보기 주소의 `/login`에서 각각 로그인 링크를 보낸다.
+(미리보기에서 한다. `main` 병합은 필요 없다.)
+
+⚠️ **새 주소로 보내면 계정이 새로 생긴다** (`shouldCreateUser` 기본값 `true`).
+시험 뒤 정리하면 된다.
 
 확인할 것:
 - [ ] 받은편지함에 오는가, **스팸함**으로 가는가
 - [ ] 발신자가 "첫배포"로 보이는가
 - [ ] 링크를 눌러 `/my`까지 가는가
+
+> 지메일에서는 메일을 열고 ⋮ → **원본 보기** 로 SPF·DKIM·DMARC가
+> 모두 PASS인지 볼 수 있다. 네이버도 비슷한 기능이 있다.
 
 **스팸함으로 가면** AWS SES 서울 리전(`ap-northeast-2`)으로 옮기는 판단을 한다.
 레코드만 바꾸면 되는 작업이다.
@@ -160,16 +168,16 @@ Resend의 SMTP는 사용자명이 고정이다.
 ## 3. 그다음 — 공개 (사장님 결정 필요)
 
 ```
-⑥ main 병합       → firstdeploy.kr이 진짜 판매 사이트가 된다
-⑦ 주소 갱신        → NEXT_PUBLIC_SITE_URL · Supabase Site URL · Redirect URLs
+⑦ main 병합       → firstdeploy.kr이 진짜 판매 사이트가 된다
+⑧ 주소 갱신        → NEXT_PUBLIC_SITE_URL · Supabase Site URL · Redirect URLs
                      → 재배포 (환경변수는 배포 시점에 구워진다)
-⑧ 왕복 재확인      → 운영 도메인에서 로그인 · 결제
+⑨ 왕복 재확인      → 운영 도메인에서 로그인 · 결제
 ```
 
-**⑥은 임의로 하지 않는다.** 병합하는 순간 공개되는데, 지금 그 페이지에는
+**⑦은 임의로 하지 않는다.** 병합하는 순간 공개되는데, 지금 그 페이지에는
 **샘플 후기**와 **자리표시자 사업자정보**가 있고 **통신판매업 신고**도 안 된 상태다.
 `robots.txt`가 첫 화면을 허용하고 있어 검색엔진에 잡힐 수 있다.
-⑤까지 끝낸 뒤 따로 상의한다. 판매 전 남은 항목은
+⑥까지 끝낸 뒤 따로 상의한다. 판매 전 남은 항목은
 [`docs/DEPLOY.md`](DEPLOY.md)의 '7. 판매 시작 전'에 있다.
 
 ---
