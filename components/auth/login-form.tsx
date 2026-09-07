@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { loginErrorMessage } from "@/lib/auth/login-error";
+import { callbackErrorMessage, loginErrorMessage } from "@/lib/auth/login-error";
 import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
@@ -32,6 +32,17 @@ export function LoginForm() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [email, setEmail] = useState("");
 
+  /*
+   * 링크를 눌러 돌아왔다가 실패한 경우 `/auth/callback`이 ?error= 를 붙여 보낸다.
+   * 읽지 않으면 손님은 아무 설명 없는 빈 로그인 화면만 본다.
+   *
+   * 새로 링크를 보내면 지운다 — 방금 한 일의 결과가 화면에 남아야지,
+   * 지나간 실패가 새 안내와 나란히 있으면 어느 쪽이 지금 상황인지 알 수 없다.
+   */
+  const [callbackError, setCallbackError] = useState<string | null>(() =>
+    callbackErrorMessage(searchParams.get("error")),
+  );
+
   // 로그인 후 돌아갈 곳. 우리 사이트 안의 경로만 허용한다.
   const rawNext = searchParams.get("next") ?? "/my";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/my";
@@ -58,6 +69,7 @@ export function LoginForm() {
   async function sendEmailLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus({ kind: "working" });
+    setCallbackError(null);
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
@@ -92,6 +104,16 @@ export function LoginForm() {
 
   return (
     <div>
+      {/*
+       * 링크를 눌렀는데 되돌아온 손님에게는 이것이 가장 먼저 필요한 정보다.
+       * 폼보다 위에 둔다 — 아래에 두면 "왜 또 로그인 화면이지"만 남는다.
+       */}
+      {callbackError ? (
+        <p role="alert" className="mb-8 rounded border-2 border-fg bg-surface p-5 text-base leading-relaxed text-fg">
+          {callbackError}
+        </p>
+      ) : null}
+
       {kakaoEnabled ? (
         <>
           <Button
