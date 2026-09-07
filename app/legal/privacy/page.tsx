@@ -145,6 +145,11 @@ export default function PrivacyPage() {
                 <td className="py-3">국외</td>
               </tr>
               <tr className="border-b border-line align-top">
+                <th scope="row" className="py-3 pr-4 text-left font-normal">Resend</th>
+                <td className="py-3 pr-4">로그인 링크 등 이메일 발송</td>
+                <td className="py-3">국외</td>
+              </tr>
+              <tr className="border-b border-line align-top">
                 <th scope="row" className="py-3 pr-4 text-left font-normal">Vercel</th>
                 <td className="py-3 pr-4">서비스 호스팅</td>
                 <td className="py-3">국외</td>
@@ -162,7 +167,14 @@ export default function PrivacyPage() {
             </tbody>
           </table>
         </div>
-        {/* TODO: 실제로 사용하는 업체와 일치하는지 오픈 전 확인 */}
+        {/*
+         * 2026-09-07 대조함 — 위 6곳이 현재 실제로 쓰는 전부다.
+         *
+         * ⚠️ **업체를 새로 붙이면 이 표부터 고친다.**
+         *    Resend를 붙인 날 이 표를 잊었다. 메일 발송은 손님 주소를 바깥으로
+         *    넘기는 일인데, 고지 없이 이틀 돌았다.
+         *    설정을 마친 그 자리에서 여기까지 와야 다음에 안 잊는다.
+         */}
       </Article>
 
       <Article heading="7. 이용자의 권리와 행사 방법">

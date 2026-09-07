@@ -464,7 +464,7 @@ console.log(h,await r.resolveTxt(h),await r.resolveMx(h));})()"
 - [ ] `lib/config.ts`의 `business` 값(상호·대표자·사업자등록번호 등) 채우기
 - [ ] `contact` 값(카카오톡 채널 주소, 이메일) 채우기
 - [ ] 강사 소개를 실제 이력·사진으로 교체 (`components/landing/instructor.tsx`)
-- [ ] 개인정보처리방침의 처리위탁 표가 실제 사용 업체와 맞는지 확인
+- [x] 개인정보처리방침의 처리위탁 표가 실제 사용 업체와 맞는지 확인 (2026-09-07, Resend 추가)
 - [ ] **Vercel Authentication 끄기** (4번 참고) — 켜져 있으면 손님이 못 들어온다
 
 ---
