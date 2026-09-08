@@ -244,6 +244,8 @@ student 계정이 있으면 `/admin`이 안 보이는 것,
 ### 등록번호 없이 지금 할 수 있는 일
 
 1. **무료 1강 영상 제작** ← 지금 여기. 가장 오래 걸리고 아무것도 안 기다린다
+   → 대본 확정됨: [`docs/course/lesson-01-script.md`](course/lesson-01-script.md)
+   → 강의 대본 전체: [`docs/course/`](course/README.md)
 2. 카카오톡 채널 개설 → `contact.kakaoChannelUrl`
 3. 문의받을 이메일 정하기 — 지금 `hello@send.firstdeploy.kr`은 **보내기 전용**이다.
    손님이 답장해도 아무도 못 받는다. 메일로 받으려면 MX 설정이 따로 필요하다.
@@ -284,3 +286,4 @@ student 계정이 있으면 `/admin`이 안 보이는 것,
 - [`docs/DEPLOY.md`](DEPLOY.md) — 배포·환경변수·도메인과 DNS·판매 전 점검
 - [`docs/SUPABASE.md`](SUPABASE.md) — 인증·RLS·이메일 로그인·카카오 KOE205
 - [`docs/plans/PLAN_첫배포.md`](plans/PLAN_첫배포.md) — 전체 계획과 Notes(배운 점)
+- [`docs/course/`](course/README.md) — 여덟 강 촬영 대본
