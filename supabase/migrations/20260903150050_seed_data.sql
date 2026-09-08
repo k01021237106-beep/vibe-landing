@@ -39,6 +39,8 @@ where c.slug = 'first-deploy-vibecoding'
 on conflict (course_id, position) do nothing;
 
 -- TODO: 실제로 자주 들어오는 질문으로 교체
+-- ⚠️ FAQ는 여기서 끝이 아니다. 뒤 마이그레이션에서 항목이 더 붙는다.
+--    20260908120000_faq_extra_cost.sql — "강의 말고 따로 돈이 드나요?" (position 3)
 insert into public.faqs (course_id, question, answer, position)
 select c.id, v.question, v.answer, v.position
 from public.courses c
